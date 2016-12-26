@@ -75,8 +75,6 @@ def computeProfit(indicatorDataFrame, purchaseDataFrame, startDate, endDate, pri
     dataFrameSlice["WaitToBuy"] = dataFrameSlice[outlierZScoreColumn] > cnst.deltaSignificantZScore
 
     for index, row in dataFrameSlice.iterrows():
-        #     print("Price: " + locale.currency(row["Adj Close"]) + ", SMA: " + str(row[sellSMAColumn]) + ", Delta: " + str(row[deltaColumn]) + ", WTB: " + str(row["WaitToBuy"]) + ", state: " + str(tradeState))
-
         # 1. Watch for statistically significant positive Velocity event in VIX
         # 2. Once velocity event occurs wait for velocity to return to 0.0, then purchase XIV
         # 3. Wait for VIX to drop below long-term moving average
@@ -99,7 +97,7 @@ def computeProfit(indicatorDataFrame, purchaseDataFrame, startDate, endDate, pri
                         print("   BUY: " + locale.currency(
                             pos.totalPrice()) + ", Date: " + dateStr + ", Price: " + locale.currency(purchasePrice))
 
-        if len(positions) and isBelowSellIndicator:
+        if len(positions) and isBelowSellIndicator and row[outlierSMADeltaColumn] >= 0.0:
             if len(positions) > 1:
                 outlay = sum(p.totalPrice() for p in positions)
                 if printTrades:
