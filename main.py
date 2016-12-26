@@ -1,5 +1,4 @@
-import pandas as pd
-import pandas_datareader.data as web  # Package and modules for importing data; this code may change depending on pandas version
+import data_fetcher
 import datetime
 import math
 import matplotlib.pyplot as plt
@@ -16,21 +15,13 @@ import dataframe_utilities as dfutil
 # Global Setup
 locale.setlocale(locale.LC_ALL, 'en_US')
 
-
 def clamp(n, minn, maxn): return min(max(n, minn), maxn)
 
-
-
-
-
-# We will look at stock prices over the past year, starting at January 1, 2016
 start = datetime.datetime(1900, 1, 1)
 end = datetime.datetime(2017, 1, 1)
-# end = datetime.date.today()
 
-# First argument is the series we want, second is the source ("yahoo" for Yahoo! Finance), third is the start date, fourth is the end date
-vixDataFrame = web.DataReader("^VIX", "yahoo", start, end)
-xivDataFrame = web.DataReader("XIV", "yahoo", start, end)
+vixDataFrame = data_fetcher.fetchData(symbol="^VIX", startDate=start, endDate=end)
+xivDataFrame = data_fetcher.fetchData(symbol="XIV", startDate=start, endDate=end)
 
 adjCloseSMAColumn = "Adj Close " + str(cnst.sellIndicatorSMADays) + "d Avg"
 outlierSMADeltaColumn = "Adj Close Delta % " + str(cnst.outlierSMADays) + "d Avg"
@@ -90,7 +81,8 @@ def computeProfit(indicatorDataFrame, purchaseDataFrame, startDate, endDate, pri
             if row[outlierSMADeltaColumn] <= 0.0:
                 waitToBuy = False
                 if not isBelowSellIndicator:
-                    pos = TradePosition(math.floor(buyDollarAmount / purchasePrice), purchasePrice)
+                    shareCountToBuy = math.floor(buyDollarAmount / purchasePrice)
+                    pos = TradePosition(shareCountToBuy, purchasePrice)
                     positions.append(pos)
                     maxPurchase = max(maxPurchase, pos.totalPrice())
                     if printTrades:
