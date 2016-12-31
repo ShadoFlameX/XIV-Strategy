@@ -43,11 +43,26 @@ maxOutlay = 0.0
 maxLoss = 0.0
 buyDollarAmount = 1000
 
-positions = []
+closedPositions = []
+openPositions = []
 printTrades = True
 shouldWaitToBuy = False
 date = startDate
-while date < endDate:
+currentYear = startDate.year
+
+while date <= endDate:
+    if date.year > currentYear or date == endDate:
+        if len(openPositions):
+            print("")
+        print("========== " + str(currentYear) + " Summary ==========")
+        print("  Max Outlay: " + locale.currency(maxOutlay))
+        print("    Max Loss: " + locale.currency(maxLoss))
+        print("Total Profit: " + locale.currency(sum(p.profit() for p in closedPositions if p.sellDate.year == currentYear)))
+        print("==================================\n")
+        maxOutlay = 0
+        maxLoss = 0
+        currentYear = date.year
+
     if date in xivDataFrame.index:
         currentIndicatorRow = vixDataFrame.ix[date]
         currentTargetRow = xivDataFrame.ix[date]
@@ -65,38 +80,33 @@ while date < endDate:
                 if not isBelowSellIndicator:
                     shareCountToBuy = math.floor(buyDollarAmount / currentPrice)
                     pos = tcalc.TradePosition(date, currentPrice, shareCountToBuy)
-                    positions.append(pos)
+                    openPositions.append(pos)
 
                     if printTrades:
                         print("   BUY: " + locale.currency(
                             pos.totalPurchasePrice()) + ", Date: " + dateStr + ", Price: " + locale.currency(currentPrice))
 
-        if len(positions):
-            openPositions = [p for p in positions if p.sellDate is None]
-
-            if len(openPositions) and isBelowSellIndicator and adjCloseDelta >= 0.0:
-                if len(openPositions) > 1:
-                    outlay = sum(p.totalPurchasePrice() for p in openPositions)
-                    maxOutlay = max(maxOutlay, outlay)
-                    if printTrades:
-                        print("OUTLAY: " + locale.currency(outlay))
-
-                for p in openPositions:
-                    p.sellDate = date
-                    p.sellPrice = currentPrice
-
-                    maxLoss = min(p.profit(), maxLoss)
-                    if printTrades:
-                        print("  SELL: " + locale.currency(p.totalSellPrice()) +
-                              ", Date: " + dateStr +
-                              ", Price: " + locale.currency(p.sellPrice) +
-                              ", Profit: " + locale.currency(p.profit()))
-
+        if len(openPositions) and isBelowSellIndicator and adjCloseDelta >= 0.0:
+            if len(openPositions) > 1:
+                outlay = sum(p.totalPurchasePrice() for p in openPositions)
+                maxOutlay = max(maxOutlay, outlay)
                 if printTrades:
-                    print("\n")
+                    print("OUTLAY: " + locale.currency(outlay))
+
+            for p in openPositions:
+                p.sellDate = date
+                p.sellPrice = currentPrice
+
+                maxLoss = min(p.profit(), maxLoss)
+                if printTrades:
+                    print("  SELL: " + locale.currency(p.totalSellPrice()) +
+                          ", Date: " + dateStr +
+                          ", Price: " + locale.currency(p.sellPrice) +
+                          ", Profit: " + locale.currency(p.profit()))
+            closedPositions.extend(openPositions)
+            openPositions = []
+
+            if printTrades:
+                print("")
 
     date = date + relativedelta(days=1)
-
-print("  Max Outlay: " + locale.currency(maxOutlay))
-print("    Max Loss: " + locale.currency(maxLoss))
-print("Total Profit: " + locale.currency(sum(p.profit() for p in positions)))
