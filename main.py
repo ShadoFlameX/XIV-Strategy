@@ -21,7 +21,7 @@ locale.setlocale(locale.LC_ALL, 'en_US')
 def clamp(n, minn, maxn): return min(max(n, minn), maxn)
 
 fetchStart = datetime.datetime(1900, 1, 1)
-fetchEnd = datetime.datetime(2017, 1, 1)
+fetchEnd = datetime.datetime(2013, 1, 1)
 
 vixDataFrame = data_fetcher.fetchData(symbol="^VIX", startDate=fetchStart, endDate=fetchEnd)
 adjCloseSMAColumn = "Adj Close " + str(cnst.sellIndicatorSMADays) + "d Avg"
@@ -110,3 +110,26 @@ while date <= endDate:
                 print("")
 
     date = date + relativedelta(days=1)
+
+purchaseDates = []
+purchasePrices = []
+for p in closedPositions:
+    purchaseDates.append(p.purchaseDate)
+    purchasePrices.append(p.purchasePrice)
+
+sellDates = []
+sellPrices = []
+for p in closedPositions:
+    sellDates.append(p.sellDate)
+    sellPrices.append(p.sellPrice)
+
+trimmedVixDataFrame = vixDataFrame.truncate(after=endDate, before=startDate)
+
+purchaseDataFrame = pd.DataFrame(index=purchaseDates, data=purchasePrices)
+sellDataFrame = pd.DataFrame(index=sellDates, data=sellPrices)
+ax = xivDataFrame["Adj Close"].plot(title="XIV Purchases", grid=True, figsize=(12,6), alpha=0.75, color="blue")
+trimmedVixDataFrame["Adj Close"].plot(ax=ax, grid=True, color="gray", alpha=1)
+trimmedVixDataFrame[adjCloseSMAColumn].plot(ax=ax, grid=True, color="orange")
+purchaseDataFrame.plot(ax=ax, grid=True, color="green", style='^', alpha=1)
+sellDataFrame.plot(ax=ax, grid=True, color="red", style='^', alpha=1)
+plt.show()
