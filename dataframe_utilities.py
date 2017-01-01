@@ -21,8 +21,7 @@ def addComputedMetricColumn(dataFrame, metricType, inputColumn="", movingAvgWind
     elif metricType is MetricType.movingAvg:
         assert movingAvgWindow > 0
         newColumnName = inputColumn + " " + str(movingAvgWindow) + "d Avg"
-        dataFrame[newColumnName] = np.round(dataFrame[inputColumn].rolling(window=movingAvgWindow, center=False).mean(),
-                                            2)
+        dataFrame[newColumnName] = np.round(dataFrame[inputColumn].rolling(window=movingAvgWindow, center=False).median(), 2)
 
     elif metricType is MetricType.deltaDiff:
         # Calculate daily $ & percentage change

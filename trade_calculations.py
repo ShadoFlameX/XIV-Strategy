@@ -1,6 +1,8 @@
 from dateutil.relativedelta import relativedelta
 import dataframe_utilities as dfutil
 import constants as cnst
+import locale
+import math
 
 def shouldWaitToBuy(date, indicatorDataFrame, zScoreInputColumn):
     oneYearBefore = date - relativedelta(years=1)
@@ -35,3 +37,126 @@ class TradePosition:
 
     def profit(self):
         return (self.sellPrice - self.purchasePrice) * self.shareCount
+
+
+class SimulationResult:
+    def __init__(self, sellIndicatorSMADays=None, outlierSMADays=None, profit=0.0, maxOutlay=0.0, maxLoss=0.0, closedPositions=None, openPositions=None):
+        self.sellIndicatorSMADays = sellIndicatorSMADays
+        self.outlierSMADays = outlierSMADays
+        self.profit = profit
+        self.maxOutlay = maxOutlay
+        self.maxLoss = maxLoss
+        self.closedPositions = closedPositions
+        self.openPositions = openPositions
+
+    def profitRatio(self):
+        if self.profit > 0:
+            return self.profit / self.maxOutlay
+        else:
+            return 0.0
+
+    def printDescription(self):
+        print("========== Final Summary ==========")
+        print("        Total Profit: " + locale.currency(self.profit))
+        print("        Profit Ratio: " + str(self.profitRatio()))
+        print("          Max Outlay: " + locale.currency(self.maxOutlay))
+        print("            Max Loss: " + locale.currency(self.maxLoss))
+        print("")
+        print("sellIndicatorSMADays: " + str(self.sellIndicatorSMADays))
+        print("      outlierSMADays: " + str(self.outlierSMADays))
+        print("===================================")
+
+
+def runSimulation(startDate=None, endDate=None,
+                  vixDataFrame=None, xivDataFrame=None, sellIndicatorSMADays=cnst.sellIndicatorSMADays, outlierSMADays=cnst.outlierSMADays,
+                  printTrades=False):
+    aggMaxOutlay = 0.0
+    aggMaxLoss = 0.0
+    aggProfit = 0.0
+    maxOutlay = 0.0
+    maxLoss = 0.0
+    buyDollarAmount = 1000
+
+    closedPositions = []
+    openPositions = []
+    shouldWait = False
+    date = startDate
+    currentYear = startDate.year
+
+    adjCloseSMAColumn = "Adj Close " + str(sellIndicatorSMADays) + "d Avg"
+    dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricType.movingAvg, inputColumn="Adj Close",
+                                   movingAvgWindow=sellIndicatorSMADays)
+    dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricType.movingAvg, inputColumn="Adj Close Delta %",
+                                   movingAvgWindow=outlierSMADays)
+    dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricType.log, inputColumn=adjCloseSMAColumn)
+
+    outlierSMADeltaColumn = "Adj Close Delta % " + str(outlierSMADays) + "d Avg"
+
+    while date <= endDate:
+        if date.year > currentYear or date == endDate:
+            profit = sum(p.profit() for p in closedPositions if p.sellDate.year == currentYear)
+
+            if printTrades:
+                if len(openPositions):
+                    print("")
+                print("========== " + str(currentYear) + " Summary ==========")
+                print("  Max Outlay: " + locale.currency(maxOutlay))
+                print("    Max Loss: " + locale.currency(maxLoss))
+                print("Total Profit: " + locale.currency(profit))
+                print("==================================\n")
+            aggMaxOutlay = max(aggMaxOutlay, maxOutlay)
+            aggMaxLoss = min(aggMaxLoss, maxLoss)
+            aggProfit += profit
+            maxOutlay = 0
+            maxLoss = 0
+            currentYear = date.year
+
+        if date in xivDataFrame.index:
+            currentIndicatorRow = vixDataFrame.ix[date]
+            currentTargetRow = xivDataFrame.ix[date]
+
+            currentPrice = currentTargetRow["Adj Close"]
+            adjCloseDelta = currentIndicatorRow["Adj Close Delta %"]
+            isBelowSellIndicator = currentIndicatorRow[adjCloseSMAColumn] > currentIndicatorRow["Adj Close"]
+            dateStr = date.strftime("%Y-%m-%d")
+
+            shouldWait = shouldWait or shouldWaitToBuy(date=date, indicatorDataFrame=vixDataFrame, zScoreInputColumn=outlierSMADeltaColumn)
+            if shouldWait:
+
+                if adjCloseDelta <= 0.0:
+                    shouldWait = False
+                    if not isBelowSellIndicator:
+                        shareCountToBuy = math.floor(buyDollarAmount / currentPrice)
+                        pos = TradePosition(date, currentPrice, shareCountToBuy)
+                        openPositions.append(pos)
+
+                        if printTrades:
+                            print("   BUY: " + locale.currency(
+                                pos.totalPurchasePrice()) + ", Date: " + dateStr + ", Price: " + locale.currency(
+                                currentPrice))
+
+            if len(openPositions) and isBelowSellIndicator and adjCloseDelta >= 0.0:
+                outlay = sum(p.totalPurchasePrice() for p in openPositions)
+                maxOutlay = max(maxOutlay, outlay)
+                if printTrades and len(openPositions) > 1:
+                    print("OUTLAY: " + locale.currency(outlay))
+
+                for p in openPositions:
+                    p.sellDate = date
+                    p.sellPrice = currentPrice
+
+                    maxLoss = min(p.profit(), maxLoss)
+                    if printTrades:
+                        print("  SELL: " + locale.currency(p.totalSellPrice()) +
+                              ", Date: " + dateStr +
+                              ", Price: " + locale.currency(p.sellPrice) +
+                              ", Profit: " + locale.currency(p.profit()))
+                closedPositions.extend(openPositions)
+                openPositions = []
+
+                if printTrades:
+                    print("")
+
+        date = date + relativedelta(days=1)
+
+    return SimulationResult(sellIndicatorSMADays=sellIndicatorSMADays, outlierSMADays=outlierSMADays, profit=aggProfit, maxOutlay=aggMaxOutlay, maxLoss=aggMaxLoss, closedPositions=closedPositions, openPositions=openPositions)
