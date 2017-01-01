@@ -70,6 +70,11 @@ class SimulationResult:
 def runSimulation(startDate=None, endDate=None,
                   vixDataFrame=None, xivDataFrame=None, sellIndicatorSMADays=cnst.sellIndicatorSMADays, outlierSMADays=cnst.outlierSMADays,
                   printTrades=False):
+    print("Run simulation for outlierSMADays: " + str(outlierSMADays) + ", sellIndicatorSMADays: " + str( sellIndicatorSMADays) + "...")
+
+    vixDataFrameCopy = vixDataFrame.copy()
+    xivDataFrameCopy = xivDataFrame.copy()
+
     aggMaxOutlay = 0.0
     aggMaxLoss = 0.0
     aggProfit = 0.0
@@ -84,11 +89,11 @@ def runSimulation(startDate=None, endDate=None,
     currentYear = startDate.year
 
     adjCloseSMAColumn = "Adj Close " + str(sellIndicatorSMADays) + "d Avg"
-    dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricType.movingAvg, inputColumn="Adj Close",
+    dfutil.addComputedMetricColumn(vixDataFrameCopy, dfutil.MetricType.movingAvg, inputColumn="Adj Close",
                                    movingAvgWindow=sellIndicatorSMADays)
-    dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricType.movingAvg, inputColumn="Adj Close Delta %",
+    dfutil.addComputedMetricColumn(vixDataFrameCopy, dfutil.MetricType.movingAvg, inputColumn="Adj Close Delta %",
                                    movingAvgWindow=outlierSMADays)
-    dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricType.log, inputColumn=adjCloseSMAColumn)
+    dfutil.addComputedMetricColumn(vixDataFrameCopy, dfutil.MetricType.log, inputColumn=adjCloseSMAColumn)
 
     outlierSMADeltaColumn = "Adj Close Delta % " + str(outlierSMADays) + "d Avg"
 
@@ -111,16 +116,16 @@ def runSimulation(startDate=None, endDate=None,
             maxLoss = 0
             currentYear = date.year
 
-        if date in xivDataFrame.index:
-            currentIndicatorRow = vixDataFrame.ix[date]
-            currentTargetRow = xivDataFrame.ix[date]
+        if date in xivDataFrameCopy.index:
+            currentIndicatorRow = vixDataFrameCopy.ix[date]
+            currentTargetRow = xivDataFrameCopy.ix[date]
 
             currentPrice = currentTargetRow["Adj Close"]
             adjCloseDelta = currentIndicatorRow["Adj Close Delta %"]
             isBelowSellIndicator = currentIndicatorRow[adjCloseSMAColumn] > currentIndicatorRow["Adj Close"]
             dateStr = date.strftime("%Y-%m-%d")
 
-            shouldWait = shouldWait or shouldWaitToBuy(date=date, indicatorDataFrame=vixDataFrame, zScoreInputColumn=outlierSMADeltaColumn)
+            shouldWait = shouldWait or shouldWaitToBuy(date=date, indicatorDataFrame=vixDataFrameCopy, zScoreInputColumn=outlierSMADeltaColumn)
             if shouldWait:
 
                 if adjCloseDelta <= 0.0:

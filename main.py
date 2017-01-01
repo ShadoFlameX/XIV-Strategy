@@ -8,6 +8,9 @@ import matplotlib.ticker as mtick
 import locale
 from pylab import plot, show, hist, figure, title
 
+from concurrent.futures import ThreadPoolExecutor, wait, as_completed
+
+
 # Local Imports
 import constants as cnst
 import dataframe_utilities as dfutil
@@ -29,19 +32,16 @@ xivDataFrame = data_fetcher.fetchData(symbol="XIV", startDate=fetchStart, endDat
 startDate = xivDataFrame.index[0]
 endDate = xivDataFrame.index[len(xivDataFrame.index) - 1]
 
-
+pool = ThreadPoolExecutor(10)
+futures = []
 results = []
 for outlierSMADays in range(1,4):
-    for sellIndicatorSMADays in range(60,100):
-        print("Calculate for outlierSMADays: " + str(outlierSMADays) + ", sellIndicatorSMADays: " + str(sellIndicatorSMADays) + "…")
-        simResult = tcalc.runSimulation(startDate=startDate,
-                                        endDate=endDate,
-                                        vixDataFrame=vixDataFrame,
-                                        xivDataFrame=xivDataFrame,
-                                        sellIndicatorSMADays=sellIndicatorSMADays,
-                                        outlierSMADays=outlierSMADays,
-                                        printTrades=False)
-        results.append(simResult)
+    for sellIndicatorSMADays in range(71,81):
+        futures.append(pool.submit(tcalc.runSimulation, startDate, endDate, vixDataFrame, xivDataFrame, sellIndicatorSMADays, outlierSMADays, False))
+
+for x in as_completed(futures):
+    simResult = x.result()
+    results.append(simResult)
 
 results.sort(key=lambda x: x.profitRatio(), reverse=True)
 
