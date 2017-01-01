@@ -1,6 +1,7 @@
 import data_fetcher
 import trade_calculations as tcalc
 import pandas as pd
+import numpy as np
 import datetime
 from dateutil.relativedelta import relativedelta
 import matplotlib.pyplot as plt
@@ -32,12 +33,13 @@ xivDataFrame = data_fetcher.fetchData(symbol="XIV", startDate=fetchStart, endDat
 startDate = xivDataFrame.index[0]
 endDate = xivDataFrame.index[len(xivDataFrame.index) - 1]
 
-pool = ThreadPoolExecutor(10)
+pool = ThreadPoolExecutor(100)
 futures = []
 results = []
-for outlierSMADays in range(1,4):
-    for sellIndicatorSMADays in range(71,81):
-        futures.append(pool.submit(tcalc.runSimulation, startDate, endDate, vixDataFrame, xivDataFrame, sellIndicatorSMADays, outlierSMADays, False))
+for outlierSMADays in range(1,3):
+    for sellIndicatorSMADays in range(65,101):
+        for zScore in np.arange(1.3, 2.25, 0.05):
+            futures.append(pool.submit(tcalc.runSimulation, startDate, endDate, vixDataFrame, xivDataFrame, sellIndicatorSMADays, outlierSMADays, zScore, False))
 
 for x in as_completed(futures):
     simResult = x.result()
