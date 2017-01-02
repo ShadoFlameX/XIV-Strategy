@@ -30,7 +30,7 @@ def sendSummaryEmail(date=None, openPositions=None, closedPositions=None):
     else:
         closedPositionsHTML += "<p>None</p>"
 
-    replacements = {"DATE_TITLE": date.strftime("%B %d, %Y"),
+    replacements = {"DATE_TITLE": date.strftime("%B %-d, %Y"),
                     "OPEN_POSITIONS": openPositionsHTML,
                     "CLOSED_POSITIONS": closedPositionsHTML}
     htmlString = html_string_from_template(template="daily_summary.html", replacements=replacements)
