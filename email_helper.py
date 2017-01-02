@@ -10,34 +10,32 @@ def sendSummaryEmail(date=None, openPositions=None, closedPositions=None):
     openPositions.sort(key=lambda p: p.purchaseDate, reverse=True)
     closedPositions.sort(key=lambda p: p.purchaseDate, reverse=True)
 
-    messageBody = date.strftime("%B %d, %Y") + "\n\n"
-
-    messageBody += "===== Open Positions =====" + "\n"
+    openPositionsHTML = ""
     if len(openPositions) > 0:
         for p in openPositions:
             if p.purchaseDate.date() == date.date():
-                messageBody += "NEW! "
-            messageBody += p.description()
-            messageBody += "\n"
+                openPositionsHTML += "<p><strong><font color=\"#009900\">" + p.description() + "</font></strong></p>"
+            else:
+                openPositionsHTML += "<p>" + p.description() + "</p>"
     else:
-        messageBody += "None" + "\n"
+        openPositionsHTML += "<p>None</p>"
 
-    messageBody += "\n"
-
-    messageBody += "===== Closed Positions =====" + "\n"
+    closedPositionsHTML = ""
     if len(closedPositions) > 0:
         for p in closedPositions:
             if p.sellDate is not None and p.sellDate.date() == date.date():
-                messageBody += "NEW! "
-            messageBody += p.description()
-            messageBody += "\n"
+                closedPositionsHTML += "<p><strong><font color=\"#990000\">" + p.description() + "</font></strong></p>"
+            else:
+                closedPositionsHTML += "<p>" + p.description() + "</p>"
     else:
-        messageBody += "None" + "\n"
+        closedPositionsHTML += "<p>None</p>"
+
     replacements = {"DATE_TITLE": date.strftime("%B %d, %Y"),
-                    "OPEN_POSITIONS": "Position 1"}
+                    "OPEN_POSITIONS": openPositionsHTML,
+                    "CLOSED_POSITIONS": closedPositionsHTML}
     htmlString = html_string_from_template(template="daily_summary.html", replacements=replacements)
-    print(htmlString)
-    #send_email(recipient="bryguy1300@gmail.com", subject="XIV Strategy Daily Summary", htmlBody=messageBody)
+    # print(htmlString)
+    send_email(recipient="bryguy1300@gmail.com", subject="XIV Strategy Daily Summary", htmlBody=htmlString)
 
 
 def send_email(recipient=None, subject=None, htmlBody=None):
