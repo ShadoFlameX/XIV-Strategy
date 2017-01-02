@@ -22,7 +22,7 @@ locale.setlocale(locale.LC_ALL, 'en_US')
 def clamp(n, minn, maxn): return min(max(n, minn), maxn)
 
 fetchStart = datetime.datetime(1900, 1, 1)
-fetchEnd = datetime.date.today()
+fetchEnd = datetime.datetime.now()
 
 vixDataFrame = data_fetcher.fetchData(symbol="^VIX", startDate=fetchStart, endDate=fetchEnd)
 dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricType.deltaPct, inputColumn="Adj Close")
@@ -38,12 +38,17 @@ futures = []
 results = []
 for outlierSMADays in range(1,3):
     for sellIndicatorSMADays in range(65,101):
-        movingAvgColumn = dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricType.trimmedMovingAvg, inputColumn="Adj Close", movingAvgWindow=sellIndicatorSMADays)
+        for highTrimPercent in np.arange(0.0, 0.75, 0.05):
+            movingAvgColumn = dfutil.addComputedMetricColumn(vixDataFrame,
+                                                             dfutil.MetricType.trimmedMovingAvg,
+                                                             inputColumn="Adj Close",
+                                                             movingAvgWindow=sellIndicatorSMADays,
+                                                             highTrimPercent=highTrimPercent)
 
-        for zScore in np.arange(1.3, 2.25, 0.05):
-            futures.append(pool.submit(tcalc.runSimulation, startDate, endDate, vixDataFrame, xivDataFrame, sellIndicatorSMADays, outlierSMADays, zScore, False))
+            for zScore in np.arange(1.3, 2.25, 0.05):
+                futures.append(pool.submit(tcalc.runSimulation, startDate, endDate, vixDataFrame, xivDataFrame, sellIndicatorSMADays, outlierSMADays, zScore, highTrimPercent, False))
 
-        vixDataFrame.drop(movingAvgColumn, axis=1, inplace=True)
+            vixDataFrame.drop(movingAvgColumn, axis=1, inplace=True)
 
 for x in as_completed(futures):
     simResult = x.result()
@@ -55,29 +60,36 @@ for r in results:
     r.printDescription()
     print("")
 
-purchaseDates = []
-purchasePrices = []
-sellDates = []
-sellPrices = []
-for p in results[0].closedPositions:
-    purchaseDates.append(p.purchaseDate)
-    purchasePrices.append(p.purchasePrice)
-    sellDates.append(p.sellDate)
-    sellPrices.append(p.sellPrice)
+if True:
+    csvString = "Net Profit, Profit Ratio, Trade Costs, Trade Count, Max Outlay, Max Loss, zScoreThreshold, sellIndicatorSMADays, outlierSMADays, highTrimPercent\n"
+    for r in results:
+        csvString += r.csvString() + "\n"
 
-adjCloseSMATrimmedColumn = dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricType.trimmedMovingAvg, inputColumn="Adj Close", movingAvgWindow=sellIndicatorSMADays)
-adjCloseSMAColumn = dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricType.movingAvg, inputColumn="Adj Close", movingAvgWindow=sellIndicatorSMADays)
-trimmedVixDataFrame = vixDataFrame.truncate(after=endDate, before=startDate)
-trimmedXivDataFrame = xivDataFrame.truncate(after=endDate, before=startDate)
+    text_file = open("results_output/results_" + datetime.datetime.now().strftime("%Y-%m-%d_%H%M") + ".csv", "w")
+    text_file.write(csvString)
+    text_file.close()
 
-# print(trimmedVixDataFrame.to_string())
+# purchaseDates = []
+# purchasePrices = []
+# sellDates = []
+# sellPrices = []
+# for p in results[0].closedPositions:
+#     purchaseDates.append(p.purchaseDate)
+#     purchasePrices.append(p.purchasePrice)
+#     sellDates.append(p.sellDate)
+#     sellPrices.append(p.sellPrice)
 
-purchaseDataFrame = pd.DataFrame(index=purchaseDates, data=purchasePrices)
-sellDataFrame = pd.DataFrame(index=sellDates, data=sellPrices)
-ax = trimmedXivDataFrame["Adj Close"].plot(title="XIV Purchases", grid=True, figsize=(12,6), alpha=0.15, color="blue")
-trimmedVixDataFrame["Adj Close"].plot(ax=ax, grid=True, color="gray", alpha=1)
-trimmedVixDataFrame[adjCloseSMATrimmedColumn].plot(ax=ax, grid=True, color="orange")
-trimmedVixDataFrame[adjCloseSMAColumn].plot(ax=ax, grid=True, color="red")
-purchaseDataFrame.plot(ax=ax, grid=True, color="green", style='^', alpha=1)
-sellDataFrame.plot(ax=ax, grid=True, color="red", style='^', alpha=1)
-plt.show()
+# adjCloseSMATrimmedColumn = dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricType.trimmedMovingAvg, inputColumn="Adj Close", movingAvgWindow=sellIndicatorSMADays)
+# adjCloseSMAColumn = dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricType.movingAvg, inputColumn="Adj Close", movingAvgWindow=sellIndicatorSMADays)
+# trimmedVixDataFrame = vixDataFrame.truncate(after=endDate, before=startDate)
+# trimmedXivDataFrame = xivDataFrame.truncate(after=endDate, before=startDate)
+
+# purchaseDataFrame = pd.DataFrame(index=purchaseDates, data=purchasePrices)
+# sellDataFrame = pd.DataFrame(index=sellDates, data=sellPrices)
+# ax = trimmedXivDataFrame["Adj Close"].plot(title="XIV Purchases", grid=True, figsize=(12,6), alpha=0.15, color="blue")
+# trimmedVixDataFrame["Adj Close"].plot(ax=ax, grid=True, color="gray", alpha=1)
+# trimmedVixDataFrame[adjCloseSMATrimmedColumn].plot(ax=ax, grid=True, color="red")
+# trimmedVixDataFrame[adjCloseSMAColumn].plot(ax=ax, grid=True, color="brown", alpha = 0.5)
+# purchaseDataFrame.plot(ax=ax, grid=True, color="green", style='^', alpha=1)
+# sellDataFrame.plot(ax=ax, grid=True, color="red", style='^', alpha=1)
+# plt.show()

@@ -13,7 +13,7 @@ class MetricType(Enum):
     logLog = 7
 
 
-def addComputedMetricColumn(dataFrame, metricType, inputColumn="", movingAvgWindow=0):
+def addComputedMetricColumn(dataFrame, metricType, inputColumn="", movingAvgWindow=0, highTrimPercent=0.0):
     if metricType is MetricType.zscore:
         mean = dataFrame[inputColumn].mean()
         stdDeviation = dataFrame[inputColumn].std()
@@ -29,7 +29,7 @@ def addComputedMetricColumn(dataFrame, metricType, inputColumn="", movingAvgWind
 
     elif metricType is MetricType.trimmedMovingAvg:
         assert movingAvgWindow > 0
-        newColumnName = inputColumn + " " + str(movingAvgWindow) + "d Avg"
+        newColumnName = inputColumn + " " + str(movingAvgWindow) + "d Trim Avg"
 
         newColumnValues = np.full(len(dataFrame.index), np.nan)
 
@@ -37,7 +37,7 @@ def addComputedMetricColumn(dataFrame, metricType, inputColumn="", movingAvgWind
             windowStartDate = dataFrame.index[idx - movingAvgWindow]
             windowEndDate = dataFrame.index[idx]
             values = np.array(dataFrame.ix[windowStartDate:windowEndDate,:][inputColumn].values)
-            newColumnValues[idx] = np.median(stats.trim1(values, 0.0, tail="left"))
+            newColumnValues[idx] = np.median(stats.trim1(values, highTrimPercent, tail="right"))
 
         dataFrame[newColumnName] = newColumnValues
         return newColumnName

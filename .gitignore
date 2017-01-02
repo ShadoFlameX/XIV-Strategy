@@ -1,5 +1,6 @@
 # Project Specific
 data_fetcher_cache/
+results_output/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

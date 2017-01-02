@@ -3,7 +3,7 @@ import dataframe_utilities as dfutil
 import constants as cnst
 import locale
 import math
-import pandas as pd
+import numpy as np
 
 def shouldWaitToBuy(date, indicatorDataFrame, zScoreInputColumn, zScoreThreshold):
     oneYearBefore = date - relativedelta(years=1)
@@ -40,10 +40,11 @@ class TradePosition:
 
 
 class SimulationResult:
-    def __init__(self, zScoreThreshold=None, sellIndicatorSMADays=None, outlierSMADays=None, maxOutlay=0.0, maxLoss=0.0, closedPositions=None, openPositions=None):
+    def __init__(self, zScoreThreshold=None, sellIndicatorSMADays=None, outlierSMADays=None, highTrimPercent=None, maxOutlay=None, maxLoss=None, closedPositions=None, openPositions=None):
         self.zScoreThreshold=zScoreThreshold
         self.sellIndicatorSMADays = sellIndicatorSMADays
         self.outlierSMADays = outlierSMADays
+        self.highTrimPercent = highTrimPercent
         self.maxOutlay = maxOutlay
         self.maxLoss = maxLoss
         self.closedPositions = closedPositions
@@ -65,6 +66,18 @@ class SimulationResult:
         else:
             return 0.0
 
+    def csvString(self):
+        return locale.currency(self.netProfit()) + ", " +\
+               str(np.round(self.profitRatio(), 4)) + ", " + \
+               locale.currency(self.tradeCosts() * -1) + ", " +\
+               str(len(self.closedPositions)) + ", " +\
+               locale.currency(self.maxOutlay) + ", " +\
+               locale.currency(self.maxLoss) + ", " +\
+               str(self.zScoreThreshold) + ", " +\
+               str(self.sellIndicatorSMADays) + ", " +\
+               str(self.outlierSMADays) + ", " +\
+               str(self.highTrimPercent)
+
     def printDescription(self):
         print("========== Final Summary ==========")
         print("          Net Profit: " + locale.currency(self.netProfit()))
@@ -77,17 +90,20 @@ class SimulationResult:
         print("     zScoreThreshold: " + str(self.zScoreThreshold))
         print("sellIndicatorSMADays: " + str(self.sellIndicatorSMADays))
         print("      outlierSMADays: " + str(self.outlierSMADays))
+        print("     highTrimPercent: " + str(self.highTrimPercent))
         print("===================================")
 
 
 def runSimulation(startDate=None,
                   endDate=None,
-                  vixDataFrame=None, xivDataFrame=None,
+                  vixDataFrame=None,
+                  xivDataFrame=None,
                   sellIndicatorSMADays=cnst.sellIndicatorSMADays,
                   outlierSMADays=cnst.outlierSMADays,
                   zScoreThreshold=cnst.deltaSignificantZScore,
+                  highTrimPercent=0.0,
                   printTrades=False):
-    print("Run simulation for zScoreThreshold: " + str(zScoreThreshold) + ", outlierSMADays: " + str(outlierSMADays) + ", sellIndicatorSMADays: " + str( sellIndicatorSMADays) + "...")
+    print("Run simulation for zScoreThreshold: " + str(zScoreThreshold) + ", outlierSMADays: " + str(outlierSMADays) + ", sellIndicatorSMADays: " + str( sellIndicatorSMADays) + ", highTrimPercent: " + str(highTrimPercent) + "...")
 
     vixDataFrameCopy = vixDataFrame.copy()
     xivDataFrameCopy = xivDataFrame.copy()
@@ -101,11 +117,12 @@ def runSimulation(startDate=None,
 
     closedPositions = []
     openPositions = []
-    shouldWait = False
+    isWaitingToBuy = False
+    isWaitingToSell = False
     date = startDate
     currentYear = startDate.year
 
-    adjCloseSMAColumn = "Adj Close " + str(sellIndicatorSMADays) + "d Avg"
+    adjCloseSMAColumn = "Adj Close " + str(sellIndicatorSMADays) + "d Trim Avg"
     dfutil.addComputedMetricColumn(vixDataFrameCopy, dfutil.MetricType.movingAvg, inputColumn="Adj Close Delta %",
                                    movingAvgWindow=outlierSMADays)
     dfutil.addComputedMetricColumn(vixDataFrameCopy, dfutil.MetricType.log, inputColumn=adjCloseSMAColumn)
@@ -140,11 +157,10 @@ def runSimulation(startDate=None,
             isBelowSellIndicator = currentIndicatorRow[adjCloseSMAColumn] > currentIndicatorRow["Adj Close"]
             dateStr = date.strftime("%Y-%m-%d")
 
-            shouldWait = shouldWait or shouldWaitToBuy(date=date, indicatorDataFrame=vixDataFrameCopy, zScoreInputColumn=outlierSMADeltaColumn, zScoreThreshold=zScoreThreshold)
-            if shouldWait:
-
+            isWaitingToBuy = isWaitingToBuy or shouldWaitToBuy(date=date, indicatorDataFrame=vixDataFrameCopy, zScoreInputColumn=outlierSMADeltaColumn, zScoreThreshold=zScoreThreshold)
+            if isWaitingToBuy:
                 if adjCloseDelta <= 0.0:
-                    shouldWait = False
+                    isWaitingToBuy = False
                     if not isBelowSellIndicator:
                         shareCountToBuy = math.floor(buyDollarAmount / currentPrice)
                         pos = TradePosition(date, currentPrice, shareCountToBuy)
@@ -155,28 +171,31 @@ def runSimulation(startDate=None,
                                 pos.totalPurchasePrice()) + ", Date: " + dateStr + ", Price: " + locale.currency(
                                 currentPrice))
 
-            if len(openPositions) and isBelowSellIndicator and adjCloseDelta >= 0.0:
-                outlay = sum(p.totalPurchasePrice() for p in openPositions)
-                maxOutlay = max(maxOutlay, outlay)
-                if printTrades and len(openPositions) > 1:
-                    print("OUTLAY: " + locale.currency(outlay))
+            if len(openPositions) and (isBelowSellIndicator or isWaitingToSell):
+                isWaitingToSell = True
+                if adjCloseDelta >= 0.0:
+                    isWaitingToSell = False
+                    outlay = sum(p.totalPurchasePrice() for p in openPositions)
+                    maxOutlay = max(maxOutlay, outlay)
+                    if printTrades and len(openPositions) > 1:
+                        print("OUTLAY: " + locale.currency(outlay))
 
-                for p in openPositions:
-                    p.sellDate = date
-                    p.sellPrice = currentPrice
+                    for p in openPositions:
+                        p.sellDate = date
+                        p.sellPrice = currentPrice
 
-                    maxLoss = min(p.profit(), maxLoss)
+                        maxLoss = min(p.profit(), maxLoss)
+                        if printTrades:
+                            print("  SELL: " + locale.currency(p.totalSellPrice()) +
+                                  ", Date: " + dateStr +
+                                  ", Price: " + locale.currency(p.sellPrice) +
+                                  ", Profit: " + locale.currency(p.profit()))
+                    closedPositions.extend(openPositions)
+                    openPositions = []
+
                     if printTrades:
-                        print("  SELL: " + locale.currency(p.totalSellPrice()) +
-                              ", Date: " + dateStr +
-                              ", Price: " + locale.currency(p.sellPrice) +
-                              ", Profit: " + locale.currency(p.profit()))
-                closedPositions.extend(openPositions)
-                openPositions = []
-
-                if printTrades:
-                    print("")
+                        print("")
 
         date = date + relativedelta(days=1)
 
-    return SimulationResult(zScoreThreshold=zScoreThreshold, sellIndicatorSMADays=sellIndicatorSMADays, outlierSMADays=outlierSMADays, maxOutlay=aggMaxOutlay, maxLoss=aggMaxLoss, closedPositions=closedPositions, openPositions=openPositions)
+    return SimulationResult(zScoreThreshold=zScoreThreshold, sellIndicatorSMADays=sellIndicatorSMADays, outlierSMADays=outlierSMADays, highTrimPercent=highTrimPercent, maxOutlay=aggMaxOutlay, maxLoss=aggMaxLoss, closedPositions=closedPositions, openPositions=openPositions)
