@@ -1,13 +1,14 @@
 import dataframe_utilities as dfutil
-
 import data_fetcher
-import trade_calculations as tcalc
 import email_helper
+import trade_calculations as tcalc
+
 import numpy as np
 import datetime
 from dateutil.relativedelta import relativedelta
 import locale
 from concurrent.futures import ThreadPoolExecutor, wait, as_completed
+import sys
 
 import pandas as pd
 from pylab import plot, show, hist, figure, title
@@ -16,21 +17,22 @@ import matplotlib.ticker as mtick
 
 # Global Setup
 locale.setlocale(locale.LC_ALL, 'en_US')
-shouldSaveCSVFile = False
-shouldSendEmail = True
+SHOULD_SAVE_CVS_FILE = False
+SHOULD_SEND_EMAIL = True
+FETCH_LATEST_QUOTE = True
 
 def clamp(n, minn, maxn): return min(max(n, minn), maxn)
 
 fetchStart = datetime.datetime(1900, 1, 1)
 fetchEnd = datetime.datetime.now()
 
-vixDataFrame = data_fetcher.fetchData(symbol="^VIX", startDate=fetchStart, endDate=fetchEnd)
+vixDataFrame = data_fetcher.fetchData(symbol="^VIX", startDate=fetchStart, endDate=fetchEnd, fetchLatestQuote=FETCH_LATEST_QUOTE)
 dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricType.deltaPct, inputColumn="Adj Close")
 dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricType.log, inputColumn="Adj Close")
 
-xivDataFrame = data_fetcher.fetchData(symbol="XIV", startDate=fetchStart, endDate=fetchEnd)
+xivDataFrame = data_fetcher.fetchData(symbol="XIV", startDate=fetchStart, endDate=fetchEnd, fetchLatestQuote=FETCH_LATEST_QUOTE)
 
-endDate = datetime.datetime(2016, 9, 23) #xivDataFrame.index[len(xivDataFrame.index) - 1]
+endDate = datetime.datetime(2016, 9, 12) #xivDataFrame.index[len(xivDataFrame.index) - 1]
 startDate = endDate - relativedelta(years=1) #xivDataFrame.index[0]
 
 pool = ThreadPoolExecutor(100)
@@ -60,7 +62,7 @@ for r in results:
     r.printDescription()
     print("")
 
-if shouldSaveCSVFile:
+if SHOULD_SAVE_CVS_FILE:
     csvString = "Net Profit, Profit Ratio, Trade Costs, Trade Count, Max Outlay, Max Loss, zScoreThreshold, sellIndicatorSMADays, outlierSMADays, highTrimPercent\n"
     for r in results:
         csvString += r.csvString() + "\n"
@@ -70,10 +72,10 @@ if shouldSaveCSVFile:
     text_file.close()
 
 
-if shouldSendEmail:
+if SHOULD_SEND_EMAIL:
     # Send an email with buy/sell info for today
     topResult = results[0]
-    email_helper.sendSummaryEmail(date=datetime.datetime(2016, 9, 23), openPositions=topResult.openPositions, closedPositions=topResult.closedPositions)
+    email_helper.sendSummaryEmail(date=datetime.datetime(2016, 9, 12), openPositions=topResult.openPositions, closedPositions=topResult.closedPositions)
 
 
 # purchaseDates = []
