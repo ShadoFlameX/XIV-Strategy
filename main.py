@@ -32,7 +32,7 @@ dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricType.log, inputColumn=
 
 xivDataFrame = data_fetcher.fetchData(symbol="XIV", startDate=fetchStart, endDate=fetchEnd, fetchLatestQuote=FETCH_LATEST_QUOTE)
 
-endDate = datetime.datetime(2016, 9, 12) #xivDataFrame.index[len(xivDataFrame.index) - 1]
+endDate = xivDataFrame.index[len(xivDataFrame.index) - 1] #datetime.datetime(2016, 9, 12)
 startDate = endDate - relativedelta(years=1) #xivDataFrame.index[0]
 
 pool = ThreadPoolExecutor(100)
@@ -75,7 +75,7 @@ if SHOULD_SAVE_CVS_FILE:
 if SHOULD_SEND_EMAIL:
     # Send an email with buy/sell info for today
     topResult = results[0]
-    email_helper.sendSummaryEmail(date=datetime.datetime(2016, 9, 12), openPositions=topResult.openPositions, closedPositions=topResult.closedPositions)
+    email_helper.sendSummaryEmail(date=datetime.datetime.now(), openPositions=topResult.openPositions, closedPositions=topResult.closedPositions)
 
 
 # purchaseDates = []
