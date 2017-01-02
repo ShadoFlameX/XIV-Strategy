@@ -3,14 +3,14 @@ import dataframe_utilities as dfutil
 import constants as cnst
 import locale
 import math
+import pandas as pd
 
 def shouldWaitToBuy(date, indicatorDataFrame, zScoreInputColumn, zScoreThreshold):
     oneYearBefore = date - relativedelta(years=1)
 
     indicatorDataFrame = truncateByDateRange(indicatorDataFrame, oneYearBefore, date)
 
-    outlierZScoreColumn = zScoreInputColumn + " Z-Score"
-    dfutil.addComputedMetricColumn(indicatorDataFrame, dfutil.MetricType.zscore, inputColumn=zScoreInputColumn)
+    outlierZScoreColumn = dfutil.addComputedMetricColumn(indicatorDataFrame, dfutil.MetricType.zscore, inputColumn=zScoreInputColumn)
     indicatorDataFrame["WaitToBuy"] = indicatorDataFrame[outlierZScoreColumn] > zScoreThreshold
 
     return indicatorDataFrame.tail(1)["WaitToBuy"][0]
@@ -106,8 +106,6 @@ def runSimulation(startDate=None,
     currentYear = startDate.year
 
     adjCloseSMAColumn = "Adj Close " + str(sellIndicatorSMADays) + "d Avg"
-    dfutil.addComputedMetricColumn(vixDataFrameCopy, dfutil.MetricType.movingAvg, inputColumn="Adj Close",
-                                   movingAvgWindow=sellIndicatorSMADays)
     dfutil.addComputedMetricColumn(vixDataFrameCopy, dfutil.MetricType.movingAvg, inputColumn="Adj Close Delta %",
                                    movingAvgWindow=outlierSMADays)
     dfutil.addComputedMetricColumn(vixDataFrameCopy, dfutil.MetricType.log, inputColumn=adjCloseSMAColumn)
