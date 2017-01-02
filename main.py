@@ -30,22 +30,22 @@ dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricType.log, inputColumn=
 
 xivDataFrame = data_fetcher.fetchData(symbol="XIV", startDate=fetchStart, endDate=fetchEnd)
 
-endDate = xivDataFrame.index[len(xivDataFrame.index) - 1]
+endDate = datetime.datetime(2016, 9, 23) #xivDataFrame.index[len(xivDataFrame.index) - 1]
 startDate = endDate - relativedelta(years=1) #xivDataFrame.index[0]
 
 pool = ThreadPoolExecutor(100)
 futures = []
 results = []
-for outlierSMADays in range(1,3):
-    for sellIndicatorSMADays in range(65,101):
-        for highTrimPercent in np.arange(0.0, 0.75, 0.05):
+for outlierSMADays in range(2,3):
+    for sellIndicatorSMADays in range(77,78):
+        for highTrimPercent in np.arange(0.6, 0.61, 0.05):
             movingAvgColumn = dfutil.addComputedMetricColumn(vixDataFrame,
                                                              dfutil.MetricType.trimmedMovingAvg,
                                                              inputColumn="Adj Close",
                                                              movingAvgWindow=sellIndicatorSMADays,
                                                              highTrimPercent=highTrimPercent)
 
-            for zScore in np.arange(1.3, 2.25, 0.05):
+            for zScore in np.arange(2.1, 2.11, 0.05):
                 futures.append(pool.submit(tcalc.runSimulation, startDate, endDate, vixDataFrame, xivDataFrame, sellIndicatorSMADays, outlierSMADays, zScore, highTrimPercent, False))
 
             vixDataFrame.drop(movingAvgColumn, axis=1, inplace=True)
