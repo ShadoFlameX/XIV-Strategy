@@ -38,6 +38,16 @@ class TradePosition:
     def profit(self):
         return (self.sellPrice - self.purchasePrice) * self.shareCount
 
+    def description(self):
+        sellDateStr = self.sellDate.strftime("%Y-%m-%d") if self.sellDate is not None else "N/A"
+        sellPriceStr = locale.currency(self.sellPrice) if self.sellPrice is not None else "N/A"
+
+        return "Purchase Date: " + self.purchaseDate .strftime("%Y-%m-%d") + ", " +\
+               "Purchase Price: " + locale.currency(self.purchasePrice) + ", " +\
+               "Share Count: " + str(self.shareCount) + ", " +\
+               "Sell Date: " + sellDateStr + ", " +\
+               "Sell Price: " + sellPriceStr
+
 
 class SimulationResult:
     def __init__(self, zScoreThreshold=None, sellIndicatorSMADays=None, outlierSMADays=None, highTrimPercent=None, maxOutlay=None, maxLoss=None, closedPositions=None, openPositions=None):

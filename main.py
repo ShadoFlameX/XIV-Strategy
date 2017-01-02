@@ -1,23 +1,23 @@
+import dataframe_utilities as dfutil
+
 import data_fetcher
 import trade_calculations as tcalc
-import pandas as pd
+import email_helper
 import numpy as np
 import datetime
 from dateutil.relativedelta import relativedelta
-import matplotlib.pyplot as plt
-import matplotlib.ticker as mtick
 import locale
-from pylab import plot, show, hist, figure, title
-
 from concurrent.futures import ThreadPoolExecutor, wait, as_completed
 
-
-# Local Imports
-import constants as cnst
-import dataframe_utilities as dfutil
+import pandas as pd
+from pylab import plot, show, hist, figure, title
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 
 # Global Setup
 locale.setlocale(locale.LC_ALL, 'en_US')
+shouldSaveCSVFile = False
+shouldSendEmail = True
 
 def clamp(n, minn, maxn): return min(max(n, minn), maxn)
 
@@ -30,8 +30,8 @@ dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricType.log, inputColumn=
 
 xivDataFrame = data_fetcher.fetchData(symbol="XIV", startDate=fetchStart, endDate=fetchEnd)
 
-startDate = xivDataFrame.index[0]
 endDate = xivDataFrame.index[len(xivDataFrame.index) - 1]
+startDate = endDate - relativedelta(years=1) #xivDataFrame.index[0]
 
 pool = ThreadPoolExecutor(100)
 futures = []
@@ -60,7 +60,7 @@ for r in results:
     r.printDescription()
     print("")
 
-if True:
+if shouldSaveCSVFile:
     csvString = "Net Profit, Profit Ratio, Trade Costs, Trade Count, Max Outlay, Max Loss, zScoreThreshold, sellIndicatorSMADays, outlierSMADays, highTrimPercent\n"
     for r in results:
         csvString += r.csvString() + "\n"
@@ -68,6 +68,13 @@ if True:
     text_file = open("results_output/results_" + datetime.datetime.now().strftime("%Y-%m-%d_%H%M") + ".csv", "w")
     text_file.write(csvString)
     text_file.close()
+
+
+if shouldSendEmail:
+    # Send an email with buy/sell info for today
+    topResult = results[0]
+    email_helper.sendSummaryEmail(date=datetime.datetime(2016, 9, 23), openPositions=topResult.openPositions, closedPositions=topResult.closedPositions)
+
 
 # purchaseDates = []
 # purchasePrices = []
@@ -78,12 +85,12 @@ if True:
 #     purchasePrices.append(p.purchasePrice)
 #     sellDates.append(p.sellDate)
 #     sellPrices.append(p.sellPrice)
-
-# adjCloseSMATrimmedColumn = dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricType.trimmedMovingAvg, inputColumn="Adj Close", movingAvgWindow=sellIndicatorSMADays)
-# adjCloseSMAColumn = dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricType.movingAvg, inputColumn="Adj Close", movingAvgWindow=sellIndicatorSMADays)
+#
+# adjCloseSMATrimmedColumn = dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricType.trimmedMovingAvg, inputColumn="Adj Close", movingAvgWindow=results[0].sellIndicatorSMADays, highTrimPercent=results[0].highTrimPercent)
+# adjCloseSMAColumn = dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricType.movingAvg, inputColumn="Adj Close", movingAvgWindow=results[0].sellIndicatorSMADays)
 # trimmedVixDataFrame = vixDataFrame.truncate(after=endDate, before=startDate)
 # trimmedXivDataFrame = xivDataFrame.truncate(after=endDate, before=startDate)
-
+#
 # purchaseDataFrame = pd.DataFrame(index=purchaseDates, data=purchasePrices)
 # sellDataFrame = pd.DataFrame(index=sellDates, data=sellPrices)
 # ax = trimmedXivDataFrame["Adj Close"].plot(title="XIV Purchases", grid=True, figsize=(12,6), alpha=0.15, color="blue")
