@@ -17,7 +17,7 @@ import matplotlib.ticker as mtick
 
 # Global Setup
 locale.setlocale(locale.LC_ALL, 'en_US')
-SHOULD_SAVE_CVS_FILE = False
+SHOULD_SAVE_CSV_FILE = False
 SHOULD_SEND_EMAIL = True
 FETCH_LATEST_QUOTE = True
 
@@ -27,8 +27,8 @@ fetchStart = datetime.datetime(1900, 1, 1)
 fetchEnd = datetime.datetime.now()
 
 vixDataFrame = data_fetcher.fetchData(symbol="^VIX", startDate=fetchStart, endDate=fetchEnd, fetchLatestQuote=FETCH_LATEST_QUOTE)
-dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricType.deltaPct, inputColumn="Adj Close")
-dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricType.log, inputColumn="Adj Close")
+dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricTypeDeltaPct, inputColumn="Adj Close")
+dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricTypeLog, inputColumn="Adj Close")
 
 xivDataFrame = data_fetcher.fetchData(symbol="XIV", startDate=fetchStart, endDate=fetchEnd, fetchLatestQuote=FETCH_LATEST_QUOTE)
 
@@ -42,7 +42,7 @@ for outlierSMADays in range(2,3):
     for sellIndicatorSMADays in range(77,78):
         for highTrimPercent in np.arange(0.6, 0.61, 0.05):
             movingAvgColumn = dfutil.addComputedMetricColumn(vixDataFrame,
-                                                             dfutil.MetricType.trimmedMovingAvg,
+                                                             dfutil.MetricTypeTrimmedMovingAvg,
                                                              inputColumn="Adj Close",
                                                              movingAvgWindow=sellIndicatorSMADays,
                                                              highTrimPercent=highTrimPercent)
@@ -62,7 +62,7 @@ for r in results:
     r.printDescription()
     print("")
 
-if SHOULD_SAVE_CVS_FILE:
+if SHOULD_SAVE_CSV_FILE:
     csvString = "Net Profit, Profit Ratio, Trade Costs, Trade Count, Max Outlay, Max Loss, zScoreThreshold, sellIndicatorSMADays, outlierSMADays, highTrimPercent\n"
     for r in results:
         csvString += r.csvString() + "\n"
@@ -88,8 +88,8 @@ if SHOULD_SEND_EMAIL:
 #     sellDates.append(p.sellDate)
 #     sellPrices.append(p.sellPrice)
 #
-# adjCloseSMATrimmedColumn = dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricType.trimmedMovingAvg, inputColumn="Adj Close", movingAvgWindow=results[0].sellIndicatorSMADays, highTrimPercent=results[0].highTrimPercent)
-# adjCloseSMAColumn = dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricType.movingAvg, inputColumn="Adj Close", movingAvgWindow=results[0].sellIndicatorSMADays)
+# adjCloseSMATrimmedColumn = dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricTypeTrimmedMovingAvg, inputColumn="Adj Close", movingAvgWindow=results[0].sellIndicatorSMADays, highTrimPercent=results[0].highTrimPercent)
+# adjCloseSMAColumn = dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricTypeMovingAvg, inputColumn="Adj Close", movingAvgWindow=results[0].sellIndicatorSMADays)
 # trimmedVixDataFrame = vixDataFrame.truncate(after=endDate, before=startDate)
 # trimmedXivDataFrame = xivDataFrame.truncate(after=endDate, before=startDate)
 #

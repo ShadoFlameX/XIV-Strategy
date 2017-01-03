@@ -10,7 +10,7 @@ def shouldWaitToBuy(date, indicatorDataFrame, zScoreInputColumn, zScoreThreshold
 
     indicatorDataFrame = truncateByDateRange(indicatorDataFrame, oneYearBefore, date)
 
-    outlierZScoreColumn = dfutil.addComputedMetricColumn(indicatorDataFrame, dfutil.MetricType.zscore, inputColumn=zScoreInputColumn)
+    outlierZScoreColumn = dfutil.addComputedMetricColumn(indicatorDataFrame, dfutil.MetricTypeZScore, inputColumn=zScoreInputColumn)
     indicatorDataFrame["WaitToBuy"] = indicatorDataFrame[outlierZScoreColumn] > zScoreThreshold
 
     return indicatorDataFrame.tail(1)["WaitToBuy"][0]
@@ -133,9 +133,9 @@ def runSimulation(startDate=None,
     currentYear = startDate.year
 
     adjCloseSMAColumn = "Adj Close " + str(sellIndicatorSMADays) + "d Trim Avg"
-    dfutil.addComputedMetricColumn(vixDataFrameCopy, dfutil.MetricType.movingAvg, inputColumn="Adj Close Delta %",
+    dfutil.addComputedMetricColumn(vixDataFrameCopy, dfutil.MetricTypeMovingAvg, inputColumn="Adj Close Delta %",
                                    movingAvgWindow=outlierSMADays)
-    dfutil.addComputedMetricColumn(vixDataFrameCopy, dfutil.MetricType.log, inputColumn=adjCloseSMAColumn)
+    dfutil.addComputedMetricColumn(vixDataFrameCopy, dfutil.MetricTypeLog, inputColumn=adjCloseSMAColumn)
 
     outlierSMADeltaColumn = "Adj Close Delta % " + str(outlierSMADays) + "d Avg"
 

@@ -48,7 +48,7 @@ def send_email(recipient=None, subject=None, htmlBody=None):
     msg.attach(MIMEText(htmlBody, 'html'))
 
     try:
-        print("Sending email to " + recipient + "…")
+        print("Sending email to " + recipient + "...")
         server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
         server.login(GMAIL_USER, GMAIL_PASS)
