@@ -1,0 +1,4 @@
+
+
+Monitor launchd output
+sudo launchctl debug gui/$UID/com.skeuo.xivstrategy --stdout --stderr
