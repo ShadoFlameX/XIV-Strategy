@@ -8,6 +8,7 @@ import datetime
 from dateutil.relativedelta import relativedelta
 import locale
 from concurrent.futures import ThreadPoolExecutor, wait, as_completed
+import os
 import sys
 
 import pandas as pd
@@ -67,7 +68,8 @@ if SHOULD_SAVE_CSV_FILE:
     for r in results:
         csvString += r.csvString() + "\n"
 
-    text_file = open("results_output/results_" + datetime.datetime.now().strftime("%Y-%m-%d_%H%M") + ".csv", "w")
+    resultsFilePath = os.path.dirname(os.path.realpath(__file__)) + "/" + "results_output/results_" + datetime.datetime.now().strftime("%Y-%m-%d_%H%M") + ".csv"
+    text_file = open(resultsFilePath, "w")
     text_file.write(csvString)
     text_file.close()
 

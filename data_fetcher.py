@@ -10,7 +10,7 @@ def fetchData(symbol, startDate, endDate, fetchLatestQuote=False):
     assert startDate
     assert endDate
 
-    filename = CACHE_DIR + symbol + "_" + startDate.strftime("%Y-%m-%d") + "_" + endDate.strftime("%Y-%m-%d") + ".pckl"
+    filename = os.path.dirname(os.path.realpath(__file__)) + "/" + CACHE_DIR + symbol + "_" + startDate.strftime("%Y-%m-%d") + "_" + endDate.strftime("%Y-%m-%d") + ".pckl"
 
     if os.path.exists(filename):
         dataFrame = pd.read_pickle(filename)

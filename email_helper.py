@@ -2,6 +2,7 @@ import re
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import os
 
 GMAIL_USER = "quantobot@gmail.com"
 GMAIL_PASS = "g4v7Vi.,dai4M#"
@@ -58,7 +59,8 @@ def send_email(recipient=None, subject=None, htmlBody=None):
         print("Email failed to send")
 
 def html_string_from_template(template=None, replacements=None):
-    with open('email_templates/' + template, 'r') as myfile:
+    templatePath = os.path.dirname(os.path.realpath(__file__)) + "/" + "email_templates/" + template
+    with open(templatePath, 'r') as myfile:
         htmlString = myfile.read()
 
         p = re.compile('\{%([A-Za-z0-9_]+)%\}')
