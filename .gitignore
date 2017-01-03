@@ -1,6 +1,5 @@
 # Project Specific
-data_fetcher_cache/
-results_output/
+*.pckl
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
