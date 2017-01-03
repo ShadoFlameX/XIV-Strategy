@@ -6,8 +6,8 @@
     <string>com.skeuo.xivstrategy</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/usr/bin/python</string>
-        <string>/Users/bryan_hansen/work-bhansen/XIV-Strategy/main.py</string>
+        <string>/usr/local/bin/python</string>
+        <string>/Users/bhansen/work-bhansen/XIV-Strategy/main.py</string>
     </array>
     <key>StartInterval</key>
     <integer>30</integer>
