@@ -9,8 +9,24 @@
         <string>/usr/local/bin/python</string>
         <string>/Users/bryanhansen/work-bhansen/XIV-Strategy/main.py</string>
     </array>
-    <key>StartInterval</key>
-    <integer>60</integer>
+    <key>ServiceDescription</key>
+	<string>XIV Strategy Analyzer</string>
+	<key>StartCalendarInterval</key>
+	<array>
+	<!-- Run twice a day. At 6:45 AM and at 12:50 PM -->
+		<dict>
+			<key>Hour</key>
+			<integer>06</integer>
+			<key>Minute</key>
+			<integer>45</integer>
+		</dict>
+		<dict>
+			<key>Hour</key>
+			<integer>12</integer>
+			<key>Minute</key>
+			<integer>50</integer>
+		</dict>
+	</array>
 </dict>
 </plist>
 
