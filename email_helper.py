@@ -3,6 +3,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import os
+import locale
 
 GMAIL_USER = "quantobot@gmail.com"
 GMAIL_PASS = "g4v7Vi.,dai4M#"
@@ -14,22 +15,16 @@ def sendSummaryEmail(date=None, openPositions=None, closedPositions=None):
     openPositionsHTML = ""
     if len(openPositions) > 0:
         for p in openPositions:
-            if p.purchaseDate.date() == date.date():
-                openPositionsHTML += "<p><strong><font color=\"#009900\">" + p.description() + "</font></strong></p>"
-            else:
-                openPositionsHTML += "<p>" + p.description() + "</p>"
+            openPositionsHTML += positionRowHTML(p, date)
     else:
-        openPositionsHTML += "<p>None</p>"
+        openPositionsHTML += '<tr><td colspan="5" align="center">None</td></tr>'
 
     closedPositionsHTML = ""
     if len(closedPositions) > 0:
         for p in closedPositions:
-            if p.sellDate is not None and p.sellDate.date() == date.date():
-                closedPositionsHTML += "<p><strong><font color=\"#990000\">" + p.description() + "</font></strong></p>"
-            else:
-                closedPositionsHTML += "<p>" + p.description() + "</p>"
+            closedPositionsHTML += positionRowHTML(p, date)
     else:
-        closedPositionsHTML += "<p>None</p>"
+        closedPositionsHTML += '<tr><td colspan="5" align="center">None</td></tr>'
 
     replacements = {"DATE_TITLE": date.strftime("%B %-d, %Y"),
                     "OPEN_POSITIONS": openPositionsHTML,
@@ -37,6 +32,28 @@ def sendSummaryEmail(date=None, openPositions=None, closedPositions=None):
     htmlString = html_string_from_template(template="daily_summary.html", replacements=replacements)
     # print(htmlString)
     send_email(recipient="bryguy1300@gmail.com", subject="XIV Strategy Daily Summary", htmlBody=htmlString)
+
+
+def positionRowHTML(position, date):
+    sellDateStr = position.sellDate.strftime("%b %-d, %Y") if position.sellDate is not None else "N/A"
+    sellPriceStr = locale.currency(position.sellPrice) if position.sellPrice is not None else "N/A"
+
+    html = ""
+    if position.sellDate is not None and position.sellDate.date() == date.date():
+        html += '<tr class="sell-highlight">'
+    elif position.purchaseDate.date() == date.date():
+        html += '<tr class="purchase-highlight">'
+    else:
+        html += '<tr>'
+
+    html += "<td align=\"center\">" + position.purchaseDate.strftime("%b %-d, %Y") + "</td>" + \
+            "<td align=\"right\">" + locale.currency(position.purchasePrice) + "</td>" + \
+            "<td align=\"right\">" + '{0:g}'.format(float(position.shareCount)) + "</td>" + \
+            "<td align=\"center\">" + sellDateStr + "</td>" + \
+            "<td align=\"right\">" + sellPriceStr + "</td>" + \
+            "</tr>"
+
+    return html
 
 
 def send_email(recipient=None, subject=None, htmlBody=None):

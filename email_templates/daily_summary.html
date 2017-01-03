@@ -1,12 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head></head>
+    <head>
+        <style>
+            #content {
+                text-align: left;
+                width: 700px;
+                margin: 0 auto;
+            }
+            body {
+                text-align: center;
+                font-family: 'Helvetica', 'Arial', sans-serif;
+                font-size: 12pt;
+            }
+
+            table {
+                border-collapse: collapse;
+            }
+
+            table, th, td {
+                border: 1px solid #AAA;
+            }
+
+            th {
+                text-align: center;
+            }
+
+            td, th {
+                padding: 8px;
+            }
+
+            tr.header {
+                background-color:#DDDDDD;
+            }
+
+            tr.purchase-highlight {
+                background-color:#BBFFBB;
+            }
+
+            tr.sell-highlight {
+                background-color:#FFBBBB;
+            }
+        </style>
+    </head>
     <body>
-        <h3><font color="#777"><strong>Summary for {%DATE_TITLE%}</strong></font></h3>
-        <h2><strong>Open Positions</strong></h2>
-        {%OPEN_POSITIONS%}
-        <br/>
-        <h2><strong>Closed Positions</strong></h2>
-        {%CLOSED_POSITIONS%}
+        <div id="content">
+            <h3><font color="#777"><strong>Summary for {%DATE_TITLE%}</strong></font></h3>
+            <h2><strong>Open Positions</strong></h2>
+            <table width="700">
+                <tr class="header">
+                    <th>Purchase Date</th>
+                    <th>Purchase Price</th>
+                    <th>Share Count</th>
+                    <th>Sell Date</th>
+                    <th>Sell Price</th>
+                </tr>
+                {%OPEN_POSITIONS%}
+            </table>
+
+            <br/>
+
+            <h2><strong>Closed Positions</strong></h2>
+            <table width="700">
+                <tr class="header">
+                    <th>Purchase Date</th>
+                    <th>Purchase Price</th>
+                    <th>Share Count</th>
+                    <th>Sell Date</th>
+                    <th>Sell Price</th>
+                </tr>
+                {%CLOSED_POSITIONS%}
+            </table>
+        </div>
     </body>
 </html>
