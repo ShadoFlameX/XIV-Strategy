@@ -1,4 +1,23 @@
+## Install Python Modules ##
+pip install numpy
+pip install scipy
+pip install pandas
+pip install pandas_datareader
+pip install futures
+pip install matplotlib
 
+## launchd setup ##
+# copy plist
+sudo cp launch_scripts/com.skeuo.xivstrategy.plist /Library/LaunchDaemons/
 
-Monitor launchd output
+# load/unload
+launchctl load -w /Library/LaunchDaemons/com.skeuo.xivstrategy.plist
+launchctl unload /Library/LaunchDaemons/com.skeuo.xivstrategy.plist
+
+# start/stop
+launchctl start com.skeuo.xivstrategy.plist
+launchctl stop com.skeuo.xivstrategy.plist
+launchctl list
+
+# Monitor launchd output
 sudo launchctl debug gui/$UID/com.skeuo.xivstrategy --stdout --stderr
