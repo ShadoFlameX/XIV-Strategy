@@ -38,9 +38,9 @@ startDate = endDate - relativedelta(years=1) #xivDataFrame.index[0] #
 pool = ThreadPoolExecutor(4)
 
 outlierSMADaysRange = [2] #range(2,3)
-sellIndicatorSMADaysRange = [66] #range(60,91)
+sellIndicatorSMADaysRange = [60] #range(60,91)
 highTrimPercentRange = [0] #np.arange(0.0, 0.71, 0.1)
-zScoreRange = [2.15] #np.arange(1.3, 2.36, 0.05)
+zScoreRange = [2.0] #np.arange(1.3, 2.36, 0.05)
 futures = []
 results = []
 for outlierSMADays in outlierSMADaysRange:
@@ -107,8 +107,8 @@ if SHOULD_SEND_EMAIL:
 #
 # purchaseDataFrame = pd.DataFrame(index=purchaseDates, data=purchasePrices)
 # sellDataFrame = pd.DataFrame(index=sellDates, data=sellPrices)
-# ax = trimmedXivDataFrame["Adj Close"].plot(title="XIV Purchases", grid=True, figsize=(12,6), alpha=0.75, color="blue")
-# trimmedXivDataFrame[xivAdjCloseSMAColumn].plot(ax=ax, grid=True, color="blue", alpha=0.35)
+# ax = trimmedXivDataFrame["Adj Close"].plot(title="XIV Purchases", grid=True, figsize=(12,6), alpha=0.5, color="blue")
+# trimmedXivDataFrame[xivAdjCloseSMAColumn].plot(ax=ax, grid=True, color="blue", alpha=0.15)
 # trimmedVixDataFrame["Adj Close"].plot(ax=ax, grid=True, color="gray", alpha=0.5)
 # trimmedVixDataFrame[adjCloseSMATrimmedColumn].plot(ax=ax, grid=True, color="red")
 # trimmedVixDataFrame[adjCloseSMAColumn].plot(ax=ax, grid=True, color="brown", alpha = 0.5)
