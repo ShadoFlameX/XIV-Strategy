@@ -24,18 +24,22 @@ def addComputedMetricColumn(dataFrame=None, metricType=None, inputColumn="", mov
         return newColumnName
 
     elif metricType == MetricTypeTrimmedMovingAvg:
-        assert movingAvgWindow > 0
-        newColumnName = inputColumn + " " + str(movingAvgWindow) + "d Trim Avg"
+        if highTrimPercent == 0.0:
+            newColumnName = addComputedMetricColumn(dataFrame, MetricTypeMovingAvg, inputColumn, movingAvgWindow)
+            newColumnName + " Trim"
+        else:
+            assert movingAvgWindow > 0
+            newColumnName = inputColumn + " " + str(movingAvgWindow) + "d Avg Trim"
 
-        newColumnValues = np.full(len(dataFrame.index), np.nan)
+            newColumnValues = np.full(len(dataFrame.index), np.nan)
 
-        for idx in range(movingAvgWindow, len(dataFrame.index)):
-            windowStartDate = dataFrame.index[idx - movingAvgWindow]
-            windowEndDate = dataFrame.index[idx]
-            values = np.array(dataFrame.ix[windowStartDate:windowEndDate,:][inputColumn].values)
-            newColumnValues[idx] = np.median(stats.trim1(values, highTrimPercent, tail="right"))
+            for idx in range(movingAvgWindow, len(dataFrame.index)):
+                windowStartDate = dataFrame.index[idx - movingAvgWindow]
+                windowEndDate = dataFrame.index[idx]
+                values = np.array(dataFrame.ix[windowStartDate:windowEndDate,:][inputColumn].values)
+                newColumnValues[idx] = np.median(stats.trim1(values, highTrimPercent, tail="right"))
 
-        dataFrame[newColumnName] = newColumnValues
+            dataFrame[newColumnName] = newColumnValues
         return newColumnName
 
     elif metricType == MetricTypeDeltaDiff:

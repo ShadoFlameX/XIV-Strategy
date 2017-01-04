@@ -117,7 +117,13 @@ def runSimulation(startDate=None,
 
     vixDataFrameCopy = vixDataFrame.copy()
     xivDataFrameCopy = xivDataFrame.copy()
-
+    xivAdjCloseDeltaColumn = dfutil.addComputedMetricColumn(xivDataFrameCopy,
+                                                               dfutil.MetricTypeDeltaPct,
+                                                               inputColumn="Adj Close")
+    xivAdjCloseSMAColumn = dfutil.addComputedMetricColumn(xivDataFrameCopy, dfutil.MetricTypeMovingAvg, inputColumn="Adj Close", movingAvgWindow=2)
+    xivAdjCloseSMADeltaColumn = dfutil.addComputedMetricColumn(xivDataFrameCopy,
+                                                               dfutil.MetricTypeDeltaPct,
+                                                               inputColumn=xivAdjCloseSMAColumn)
     aggMaxOutlay = 0.0
     aggMaxLoss = 0.0
     aggProfit = 0.0
@@ -132,10 +138,9 @@ def runSimulation(startDate=None,
     date = startDate
     currentYear = startDate.year
 
-    adjCloseSMAColumn = "Adj Close " + str(sellIndicatorSMADays) + "d Trim Avg"
+    adjCloseSMAColumn = "Adj Close " + str(sellIndicatorSMADays) + "d Avg"
     dfutil.addComputedMetricColumn(vixDataFrameCopy, dfutil.MetricTypeMovingAvg, inputColumn="Adj Close Delta %",
                                    movingAvgWindow=outlierSMADays)
-    dfutil.addComputedMetricColumn(vixDataFrameCopy, dfutil.MetricTypeLog, inputColumn=adjCloseSMAColumn)
 
     outlierSMADeltaColumn = "Adj Close Delta % " + str(outlierSMADays) + "d Avg"
 
@@ -163,13 +168,14 @@ def runSimulation(startDate=None,
             currentTargetRow = xivDataFrameCopy.ix[date]
 
             currentPrice = currentTargetRow["Adj Close"]
-            adjCloseDelta = currentIndicatorRow["Adj Close Delta %"]
+            targetAdjCloseDelta = currentTargetRow[xivAdjCloseDeltaColumn]
+            targetAdjCloseSMADelta = currentTargetRow[xivAdjCloseSMADeltaColumn]
             isBelowSellIndicator = currentIndicatorRow[adjCloseSMAColumn] > currentIndicatorRow["Adj Close"]
             dateStr = date.strftime("%Y-%m-%d")
 
             isWaitingToBuy = isWaitingToBuy or shouldWaitToBuy(date=date, indicatorDataFrame=vixDataFrameCopy, zScoreInputColumn=outlierSMADeltaColumn, zScoreThreshold=zScoreThreshold)
             if isWaitingToBuy:
-                if adjCloseDelta <= 0.0:
+                if targetAdjCloseDelta >= 0.0:
                     isWaitingToBuy = False
                     if not isBelowSellIndicator:
                         shareCountToBuy = math.floor(buyDollarAmount / currentPrice)
@@ -183,7 +189,7 @@ def runSimulation(startDate=None,
 
             if len(openPositions) and (isBelowSellIndicator or isWaitingToSell):
                 isWaitingToSell = True
-                if adjCloseDelta >= 0.0:
+                if targetAdjCloseSMADelta <= -0.012:
                     isWaitingToSell = False
                     outlay = sum(p.totalPurchasePrice() for p in openPositions)
                     maxOutlay = max(maxOutlay, outlay)

@@ -29,26 +29,30 @@ fetchEnd = datetime.datetime.now()
 
 vixDataFrame = data_fetcher.fetchData(symbol="^VIX", startDate=fetchStart, endDate=fetchEnd, fetchLatestQuote=FETCH_LATEST_QUOTE)
 dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricTypeDeltaPct, inputColumn="Adj Close")
-dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricTypeLog, inputColumn="Adj Close")
 
 xivDataFrame = data_fetcher.fetchData(symbol="XIV", startDate=fetchStart, endDate=fetchEnd, fetchLatestQuote=FETCH_LATEST_QUOTE)
 
 endDate = xivDataFrame.index[len(xivDataFrame.index) - 1] #datetime.datetime(2016, 9, 12)
 startDate = endDate - relativedelta(years=1) #xivDataFrame.index[0]
 
-pool = ThreadPoolExecutor(100)
+pool = ThreadPoolExecutor(4)
+
+outlierSMADaysRange = [2] #range(2,3)
+sellIndicatorSMADaysRange = [66] #range(60,91)
+highTrimPercentRange = [0] #np.arange(0.0, 0.71, 0.1)
+zScoreRange = [2.15] #np.arange(1.3, 2.36, 0.05)
 futures = []
 results = []
-for outlierSMADays in range(2,3):
-    for sellIndicatorSMADays in range(77,78):
-        for highTrimPercent in np.arange(0.6, 0.61, 0.05):
+for outlierSMADays in outlierSMADaysRange:
+    for sellIndicatorSMADays in sellIndicatorSMADaysRange:
+        for highTrimPercent in highTrimPercentRange:
             movingAvgColumn = dfutil.addComputedMetricColumn(vixDataFrame,
                                                              dfutil.MetricTypeTrimmedMovingAvg,
                                                              inputColumn="Adj Close",
                                                              movingAvgWindow=sellIndicatorSMADays,
                                                              highTrimPercent=highTrimPercent)
 
-            for zScore in np.arange(2.1, 2.11, 0.05):
+            for zScore in zScoreRange:
                 futures.append(pool.submit(tcalc.runSimulation, startDate, endDate, vixDataFrame, xivDataFrame, sellIndicatorSMADays, outlierSMADays, zScore, highTrimPercent, False))
 
             vixDataFrame.drop(movingAvgColumn, axis=1, inplace=True)
@@ -90,6 +94,9 @@ if SHOULD_SEND_EMAIL:
 #     sellDates.append(p.sellDate)
 #     sellPrices.append(p.sellPrice)
 #
+#
+# xivAdjCloseSMAColumn = dfutil.addComputedMetricColumn(xivDataFrame, dfutil.MetricTypeMovingAvg, inputColumn="Adj Close", movingAvgWindow=3)
+# outlierSMADeltaColumn = dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricTypeMovingAvg, inputColumn="Adj Close Delta %", movingAvgWindow=results[0].outlierSMADays)
 # adjCloseSMATrimmedColumn = dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricTypeTrimmedMovingAvg, inputColumn="Adj Close", movingAvgWindow=results[0].sellIndicatorSMADays, highTrimPercent=results[0].highTrimPercent)
 # adjCloseSMAColumn = dfutil.addComputedMetricColumn(vixDataFrame, dfutil.MetricTypeMovingAvg, inputColumn="Adj Close", movingAvgWindow=results[0].sellIndicatorSMADays)
 # trimmedVixDataFrame = vixDataFrame.truncate(after=endDate, before=startDate)
@@ -97,8 +104,9 @@ if SHOULD_SEND_EMAIL:
 #
 # purchaseDataFrame = pd.DataFrame(index=purchaseDates, data=purchasePrices)
 # sellDataFrame = pd.DataFrame(index=sellDates, data=sellPrices)
-# ax = trimmedXivDataFrame["Adj Close"].plot(title="XIV Purchases", grid=True, figsize=(12,6), alpha=0.15, color="blue")
-# trimmedVixDataFrame["Adj Close"].plot(ax=ax, grid=True, color="gray", alpha=1)
+# ax = trimmedXivDataFrame["Adj Close"].plot(title="XIV Purchases", grid=True, figsize=(12,6), alpha=0.75, color="blue")
+# trimmedXivDataFrame[xivAdjCloseSMAColumn].plot(ax=ax, grid=True, color="blue", alpha=0.35)
+# trimmedVixDataFrame["Adj Close"].plot(ax=ax, grid=True, color="gray", alpha=0.5)
 # trimmedVixDataFrame[adjCloseSMATrimmedColumn].plot(ax=ax, grid=True, color="red")
 # trimmedVixDataFrame[adjCloseSMAColumn].plot(ax=ax, grid=True, color="brown", alpha = 0.5)
 # purchaseDataFrame.plot(ax=ax, grid=True, color="green", style='^', alpha=1)
