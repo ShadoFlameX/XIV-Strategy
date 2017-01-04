@@ -8,7 +8,7 @@ import locale
 GMAIL_USER = "quantobot@gmail.com"
 GMAIL_PASS = "g4v7Vi.,dai4M#"
 
-def sendSummaryEmail(date=None, openPositions=None, closedPositions=None):
+def sendSummaryEmail(date=None, currentPrice=0.0, openPositions=None, closedPositions=None):
     openPositions.sort(key=lambda p: p.purchaseDate, reverse=True)
     closedPositions.sort(key=lambda p: p.purchaseDate, reverse=True)
 
@@ -26,7 +26,8 @@ def sendSummaryEmail(date=None, openPositions=None, closedPositions=None):
     else:
         closedPositionsHTML += '<tr><td colspan="5" align="center">None</td></tr>'
 
-    replacements = {"DATE_TITLE": date.strftime("%B %-d, %Y"),
+    replacements = {"DATE_TITLE": date.strftime("%B %-d, %Y %-I:%M %p"),
+                    "XIV_PRICE": locale.currency(currentPrice),
                     "OPEN_POSITIONS": openPositionsHTML,
                     "CLOSED_POSITIONS": closedPositionsHTML}
     htmlString = html_string_from_template(template="daily_summary.html", replacements=replacements)
