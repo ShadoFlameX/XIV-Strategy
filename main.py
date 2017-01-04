@@ -85,7 +85,8 @@ if SHOULD_SEND_EMAIL:
         topResult = results[0]
         currentPrice = currentIndicatorRow = xivDataFrame.ix[lastDate]["Adj Close"]
         email_helper.sendSummaryEmail(date=datetime.datetime.now(), currentPrice=currentPrice, openPositions=topResult.openPositions, closedPositions=topResult.closedPositions)
-
+    else:
+        print("Skip sending email, last quote date is not today")
 
 # purchaseDates = []
 # purchasePrices = []
