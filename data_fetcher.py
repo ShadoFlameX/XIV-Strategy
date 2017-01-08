@@ -1,6 +1,6 @@
 import pandas as pd
 import pandas_datareader.data as web
-import os
+import urllib, os, re
 
 CACHE_DIR = "data_fetcher_cache/"
 YAHOO_TODAY = "http://download.finance.yahoo.com/d/quotes.csv?s=%s&e=.csv&f=d1t1ohgl1vl1"
@@ -35,5 +35,35 @@ def fetch_current_quote(symbol=None):
     new_quote = pd.read_csv(url, names=[u'Date', u'Time', u'Open', u'High', u'Low', u'Close', u'Volume', u'Adj Close'])
     stamp = pd.to_datetime(new_quote.Date)
     new_quote.index = stamp
+    row = new_quote.iloc[:, 2:]
 
-    return new_quote.iloc[:, 2:]
+    googleQuote = fetch_current_quote_google(symbol)
+    if googleQuote is not None:
+        row['Adj Close'] = googleQuote
+
+    return row
+
+def fetch_current_quote_google(symbol):
+    quote = None
+
+    symbol = symbol.replace("^", ":") # Google expects index lookups to use colon
+    url = "http://www.google.com/finance?&q="
+    txt = urllib.urlopen(url + symbol).read()
+    k = re.search('id="ref_(.*?)">(.*?)<', txt)
+    if k:
+        tmp = k.group(2)
+        quote = convert_to_float(tmp.replace(',', ''))
+    else:
+        print("Google real-time look-up failed!")
+
+    return quote
+
+def convert_to_float(s):
+    value = None
+
+    try:
+        value = float(s)
+    except ValueError:
+        print("Could not convert to float: %s", s)
+
+    return value
