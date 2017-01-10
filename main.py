@@ -84,7 +84,10 @@ if SHOULD_SEND_EMAIL:
         # Send an email with buy/sell info for today
         topResult = results[0]
         currentPrice = currentIndicatorRow = xivDataFrame.ix[lastDate]["Adj Close"]
-        email_helper.sendSummaryEmail(date=datetime.datetime.now(), currentPrice=currentPrice, openPositions=topResult.openPositions, closedPositions=topResult.closedPositions)
+        trimmedXivDataFrame = xivDataFrame.truncate(after=endDate, before=startDate)
+        chartImage = data_fetcher.chart_image(trimmedXivDataFrame)
+
+        email_helper.sendSummaryEmail(date=datetime.datetime.now(), currentPrice=currentPrice, openPositions=topResult.openPositions, closedPositions=topResult.closedPositions, chartImage=chartImage)
     else:
         print("Skip sending email, last quote date is not today")
 

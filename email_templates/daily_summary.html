@@ -7,6 +7,15 @@
                 width: 600px;
                 margin: 0 auto;
             }
+
+            #chart {
+                display: block;
+                margin-top: 50px;
+                margin-bottom: 50px;
+                margin-left: auto;
+                margin-right: auto
+            }
+
             body {
                 text-align: center;
                 font-family: 'Helvetica', 'Arial', sans-serif;
@@ -47,10 +56,20 @@
             tr.sell-highlight {
                 background-color:#FFBBBB;
             }
+
+            #chart img{
+                width:600px;
+                height: auto;
+            }
+
         </style>
     </head>
     <body>
         <div id="content">
+            <div id="chart">
+                <img src="{%CHART_IMAGE_BASE64%}" />
+            </div>
+
             <h3><strong>XIV Price: {%XIV_PRICE%}</strong></h3>
             <h3><strong>Open Positions</strong></h3>
             <table>

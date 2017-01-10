@@ -1,6 +1,10 @@
+import dataframe_utilities as dfutil
 import pandas as pd
 import pandas_datareader.data as web
+import matplotlib.pyplot as plt
 import os
+import StringIO
+from PIL import Image
 
 CACHE_DIR = "data_fetcher_cache/"
 YAHOO_TODAY = "http://download.finance.yahoo.com/d/quotes.csv?s=%s&e=.csv&f=d1t1ohgl1vl1"
@@ -37,3 +41,14 @@ def fetch_current_quote(symbol=None):
     new_quote.index = stamp
 
     return new_quote.iloc[:, 2:]
+
+def chart_image(dataframe=None):
+    ax = dataframe["Adj Close"].plot(grid=True, figsize=(10,4), alpha=1.0, color="blue")
+    ax.set_xlabel("")
+    ax.yaxis.tick_right()
+
+    imgdata = StringIO.StringIO()
+    plt.savefig(imgdata, format='png',  bbox_inches='tight', pad_inches=0, dpi=150)
+    imgdata.seek(0)
+
+    return Image.open(imgdata)

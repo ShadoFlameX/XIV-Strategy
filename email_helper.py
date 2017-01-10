@@ -4,11 +4,15 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import os
 import locale
+import urllib, base64
+import StringIO
+
+WRITE_EMAIL_TO_DISK = False
 
 GMAIL_USER = "quantobot@gmail.com"
 GMAIL_PASS = "g4v7Vi.,dai4M#"
 
-def sendSummaryEmail(date=None, currentPrice=0.0, openPositions=None, closedPositions=None):
+def sendSummaryEmail(date=None, currentPrice=0.0, openPositions=None, closedPositions=None, chartImage=None):
     openPositions.sort(key=lambda p: p.purchaseDate, reverse=True)
     closedPositions.sort(key=lambda p: p.purchaseDate, reverse=True)
 
@@ -26,13 +30,26 @@ def sendSummaryEmail(date=None, currentPrice=0.0, openPositions=None, closedPosi
     else:
         closedPositionsHTML += '<tr><td colspan="5" align="center">None</td></tr>'
 
+    imgData = StringIO.StringIO()
+    chartImage.save(imgData, "PNG")
+    imgData.seek(0)
+    imageBase64 = 'data:image/png;base64,' + urllib.quote(base64.b64encode(imgData.buf))
+    imgData.close()
+
     replacements = {"DATE_TITLE": date.strftime("%B %-d, %Y %-I:%M %p"),
+                    "CHART_IMAGE_BASE64": imageBase64,
                     "XIV_PRICE": locale.currency(currentPrice),
                     "OPEN_POSITIONS": openPositionsHTML,
                     "CLOSED_POSITIONS": closedPositionsHTML}
     htmlString = html_string_from_template(template="daily_summary.html", replacements=replacements)
-    # print(htmlString)
-    send_email(recipient="bryguy1300@gmail.com", subject="XIV Strategy Daily Summary", htmlBody=htmlString)
+
+    if WRITE_EMAIL_TO_DISK:
+        print("Writing email to disk...")
+        text_file = open("temp/test.html", "w")
+        text_file.write(htmlString)
+        text_file.close()
+    else:
+        send_email(recipient="bryguy1300@gmail.com", subject="XIV Strategy Daily Summary", htmlBody=htmlString)
 
 
 def positionRowHTML(position, date):
