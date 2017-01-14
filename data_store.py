@@ -1,9 +1,11 @@
+import os
 import sqlite3
 from datetime import date, datetime
 
 class DataStore:
     def __init__(self):
-        self.db = sqlite3.connect('data/mydb', detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
+        databaseFilepath = os.path.dirname(os.path.realpath(__file__)) + '/' + 'data/mydb'
+        self.db = sqlite3.connect(databaseFilepath, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
         self.db.row_factory = sqlite3.Row
 
         cursor = self.db.cursor()
