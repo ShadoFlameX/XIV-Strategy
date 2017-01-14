@@ -2,6 +2,7 @@ import dataframe_utilities as dfutil
 import data_fetcher
 import email_helper
 import trade_calculations as tcalc
+import data_store as ds
 
 import numpy as np
 import datetime
@@ -80,14 +81,38 @@ if SHOULD_SAVE_CSV_FILE:
 
 if SHOULD_SEND_EMAIL:
     lastDate = xivDataFrame.index[len(xivDataFrame.index) - 1]
-    if lastDate.date() == datetime.datetime.now().date():
+    today = datetime.datetime.now()
+    if lastDate.date() == today.date():
         # Send an email with buy/sell info for today
         topResult = results[0]
         currentPrice = currentIndicatorRow = xivDataFrame.ix[lastDate]["Adj Close"]
+        openPosCount = len(topResult.openPositions)
+        closedPosCount = len(topResult.closedPositions)
         trimmedXivDataFrame = xivDataFrame.truncate(after=endDate, before=startDate)
         chartImage = data_fetcher.chart_image(trimmedXivDataFrame)
 
-        email_helper.sendSummaryEmail(date=datetime.datetime.now(), currentPrice=currentPrice, openPositions=topResult.openPositions, closedPositions=topResult.closedPositions, chartImage=chartImage)
+        dataStore = ds.DataStore()
+        todayBeforeOpen = datetime.datetime(today.year, today.month, today.day, 6, 0)
+
+        emails = dataStore.fetch_entries(startDate=todayBeforeOpen)
+        lastEmailSent = None
+        prevOpenPositions = 0
+        prevClosedPositions = 0
+        if len(emails):
+            lastEmailSent = emails[-1]
+            prevOpenPositions = lastEmailSent.openPositions
+            prevClosedPositions = lastEmailSent.closedPositions
+
+        if ((lastEmailSent is None) or\
+            (openPosCount != prevOpenPositions) or\
+            (closedPosCount != prevClosedPositions)):
+            didSendEmail = email_helper.sendSummaryEmail(date=datetime.datetime.now(), currentPrice=currentPrice, openPositions=topResult.openPositions, closedPositions=topResult.closedPositions, chartImage=chartImage)
+            if didSendEmail:
+                dataStore.add_entry(openPositions=openPosCount, closedPositions=closedPosCount)
+        else:
+            print("Skip sending email, no new positions")
+        dataStore.close()
+
     else:
         print("Skip sending email, last quote date is not today")
 

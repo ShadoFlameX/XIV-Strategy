@@ -45,7 +45,7 @@ def fetch_current_quote(symbol=None):
 def chart_image(dataframe=None):
     ax = dataframe["Adj Close"].plot(grid=True, figsize=(10,4), alpha=1.0, color="blue")
     ax.set_xlabel("")
-    ax.yaxis.tick_right()
+    ax.tick_params(labelright=True)
 
     imgdata = StringIO.StringIO()
     plt.savefig(imgdata, format='png',  bbox_inches='tight', pad_inches=0, dpi=150)

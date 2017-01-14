@@ -48,8 +48,11 @@ def sendSummaryEmail(date=None, currentPrice=0.0, openPositions=None, closedPosi
         text_file = open("temp/test.html", "w")
         text_file.write(htmlString)
         text_file.close()
+        result = True
     else:
-        send_email(recipient="bryguy1300@gmail.com", subject="XIV Strategy Daily Summary", htmlBody=htmlString)
+        result = send_email(recipient="bryguy1300@gmail.com", subject="XIV Strategy Daily Summary", htmlBody=htmlString)
+
+    return result
 
 
 def positionRowHTML(position, date):
@@ -75,23 +78,33 @@ def positionRowHTML(position, date):
 
 
 def send_email(recipient=None, subject=None, htmlBody=None):
-    msg = MIMEMultipart('alternative')
-    msg['From'] = GMAIL_USER
-    msg['To'] = recipient
-    msg['Subject'] = subject
+    result = False
 
-    # msg.attach(MIMEText(body, 'plain'))
-    msg.attach(MIMEText(htmlBody, 'html'))
+    if recipient and len(recipient) and\
+        subject and len(subject) and\
+        htmlBody and len(htmlBody):
 
-    try:
-        print("Sending email to " + recipient + "...")
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-        server.login(GMAIL_USER, GMAIL_PASS)
-        server.sendmail(GMAIL_USER, recipient, msg.as_string())
-        server.quit()
-    except:
-        print("Email failed to send")
+        msg = MIMEMultipart('alternative')
+        msg['From'] = GMAIL_USER
+        msg['To'] = recipient
+        msg['Subject'] = subject
+
+        # msg.attach(MIMEText(body, 'plain'))
+        msg.attach(MIMEText(htmlBody, 'html'))
+
+        try:
+            print("Sending email to " + recipient + "...")
+            server = smtplib.SMTP('smtp.gmail.com', 587)
+            server.starttls()
+            server.login(GMAIL_USER, GMAIL_PASS)
+            server.sendmail(GMAIL_USER, recipient, msg.as_string())
+            server.quit()
+            result = True
+
+        except:
+            print("Email failed to send")
+
+    return result
 
 def html_string_from_template(template=None, replacements=None):
     templatePath = os.path.dirname(os.path.realpath(__file__)) + "/" + "email_templates/" + template
