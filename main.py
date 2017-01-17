@@ -104,8 +104,8 @@ if SHOULD_SEND_EMAIL:
             prevClosedPositions = lastEmailSent.closedPositions
 
         if ((lastEmailSent is None) or\
-            (openPosCount != prevOpenPositions) or\
-            (closedPosCount != prevClosedPositions)):
+            (openPosCount > prevOpenPositions) or\
+            (closedPosCount > prevClosedPositions)):
             didSendEmail = email_helper.sendSummaryEmail(date=datetime.datetime.now(), currentPrice=currentPrice, openPositions=topResult.openPositions, closedPositions=topResult.closedPositions, chartImage=chartImage)
             if didSendEmail:
                 dataStore.add_entry(openPositions=openPosCount, closedPositions=closedPosCount)
