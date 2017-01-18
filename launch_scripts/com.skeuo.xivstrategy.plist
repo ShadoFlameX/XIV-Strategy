@@ -13,6 +13,10 @@
 	<string>XIV Strategy Analyzer</string>
 	<key>StartInterval</key>
 	<integer>300</integer>
+	<key>StandardOutPath</key>
+	<string>/var/log/com.skeuo.xivstrategy.log</string>
+	<key>StandardErrorPath</key>
+	<string>/var/log/com.skeuo.xivstrategy_err.log</string>
 </dict>
 </plist>
 
