@@ -1,9 +1,12 @@
+import logging
 from dateutil.relativedelta import relativedelta
 import dataframe_utilities as dfutil
 import constants as cnst
 import locale
 import math
 import numpy as np
+
+logger = logging.getLogger("xivstrategy.trade_calculations")
 
 def shouldWaitToBuy(date, indicatorDataFrame, zScoreInputColumn, zScoreThreshold):
     oneYearBefore = date - relativedelta(years=1)
@@ -88,21 +91,23 @@ class SimulationResult:
                str(self.outlierSMADays) + ", " +\
                str(self.highTrimPercent)
 
-    def printDescription(self):
-        print("========== Final Summary ==========")
-        print("          Net Profit: " + locale.currency(self.netProfit()))
-        print("        Profit Ratio: " + str(self.profitRatio()))
-        print("         Trade Costs: " + locale.currency(self.tradeCosts() * -1))
-        print("         Trade Count: " + str(len(self.closedPositions)))
-        print("          Max Outlay: " + locale.currency(self.maxOutlay))
-        print("            Max Loss: " + locale.currency(self.maxLoss))
-        print("")
-        print("     zScoreThreshold: " + str(self.zScoreThreshold))
-        print("sellIndicatorSMADays: " + str(self.sellIndicatorSMADays))
-        print("      outlierSMADays: " + str(self.outlierSMADays))
-        print("     highTrimPercent: " + str(self.highTrimPercent))
-        print("===================================")
+    def description(self):
+        description = "\n"
+        description += "=========== Final Summary ===========\n"
+        description += "          Net Profit: " + locale.currency(self.netProfit()) + "\n"
+        description += "        Profit Ratio: " + str(self.profitRatio()) + "\n"
+        description += "         Trade Costs: " + locale.currency(self.tradeCosts() * -1) + "\n"
+        description += "         Trade Count: " + str(len(self.closedPositions)) + "\n"
+        description += "          Max Outlay: " + locale.currency(self.maxOutlay) + "\n"
+        description += "            Max Loss: " + locale.currency(self.maxLoss) + "\n"
+        description += "" + "\n"
+        description += "     zScoreThreshold: " + str(self.zScoreThreshold) + "\n"
+        description += "sellIndicatorSMADays: " + str(self.sellIndicatorSMADays) + "\n"
+        description += "      outlierSMADays: " + str(self.outlierSMADays) + "\n"
+        description += "     highTrimPercent: " + str(self.highTrimPercent) + "\n"
+        description += "==================================="
 
+        return description
 
 def runSimulation(startDate=None,
                   endDate=None,
@@ -113,7 +118,7 @@ def runSimulation(startDate=None,
                   zScoreThreshold=cnst.deltaSignificantZScore,
                   highTrimPercent=0.0,
                   printTrades=False):
-    print("Run simulation for zScoreThreshold: " + str(zScoreThreshold) + ", outlierSMADays: " + str(outlierSMADays) + ", sellIndicatorSMADays: " + str( sellIndicatorSMADays) + ", highTrimPercent: " + str(highTrimPercent) + "...")
+    logger.info("Run simulation for zScoreThreshold: " + str(zScoreThreshold) + ", outlierSMADays: " + str(outlierSMADays) + ", sellIndicatorSMADays: " + str( sellIndicatorSMADays) + ", highTrimPercent: " + str(highTrimPercent) + "...")
 
     vixDataFrameCopy = vixDataFrame.copy()
     xivDataFrameCopy = xivDataFrame.copy()
@@ -150,12 +155,12 @@ def runSimulation(startDate=None,
 
             if printTrades:
                 if len(openPositions):
-                    print("")
-                print("========== " + str(currentYear) + " Summary ==========")
-                print("  Max Outlay: " + locale.currency(maxOutlay))
-                print("    Max Loss: " + locale.currency(maxLoss))
-                print("Total Profit: " + locale.currency(profit))
-                print("==================================\n")
+                    logger.info("")
+                logger.info("========== " + str(currentYear) + " Summary ==========")
+                logger.info("  Max Outlay: " + locale.currency(maxOutlay))
+                logger.info("    Max Loss: " + locale.currency(maxLoss))
+                logger.info("Total Profit: " + locale.currency(profit))
+                logger.info("==================================\n")
             aggMaxOutlay = max(aggMaxOutlay, maxOutlay)
             aggMaxLoss = min(aggMaxLoss, maxLoss)
             aggProfit += profit
@@ -183,7 +188,7 @@ def runSimulation(startDate=None,
                         openPositions.append(pos)
 
                         if printTrades:
-                            print("   BUY: " + locale.currency(
+                            logger.info("   BUY: " + locale.currency(
                                 pos.totalPurchasePrice()) + ", Date: " + dateStr + ", Price: " + locale.currency(
                                 currentPrice))
 
@@ -194,7 +199,7 @@ def runSimulation(startDate=None,
                     outlay = sum(p.totalPurchasePrice() for p in openPositions)
                     maxOutlay = max(maxOutlay, outlay)
                     if printTrades and len(openPositions) > 1:
-                        print("OUTLAY: " + locale.currency(outlay))
+                        logger.info("OUTLAY: " + locale.currency(outlay))
 
                     for p in openPositions:
                         p.sellDate = date
@@ -202,15 +207,15 @@ def runSimulation(startDate=None,
 
                         maxLoss = min(p.profit(), maxLoss)
                         if printTrades:
-                            print("  SELL: " + locale.currency(p.totalSellPrice()) +
-                                  ", Date: " + dateStr +
-                                  ", Price: " + locale.currency(p.sellPrice) +
-                                  ", Profit: " + locale.currency(p.profit()))
+                            logger.info("  SELL: " + locale.currency(p.totalSellPrice()) +
+                                        ", Date: " + dateStr +
+                                        ", Price: " + locale.currency(p.sellPrice) +
+                                        ", Profit: " + locale.currency(p.profit()))
                     closedPositions.extend(openPositions)
                     openPositions = []
 
                     if printTrades:
-                        print("")
+                        logger.info("")
 
         date = date + relativedelta(days=1)
 

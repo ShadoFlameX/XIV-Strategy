@@ -1,3 +1,4 @@
+import logging
 import re
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -6,6 +7,8 @@ import os
 import locale
 import urllib, base64
 import StringIO
+
+logger = logging.getLogger("xivstrategy.email_helper")
 
 WRITE_EMAIL_TO_DISK = False
 
@@ -44,7 +47,7 @@ def sendSummaryEmail(date=None, currentPrice=0.0, openPositions=None, closedPosi
     htmlString = html_string_from_template(template="daily_summary.html", replacements=replacements)
 
     if WRITE_EMAIL_TO_DISK:
-        print("Writing email to disk...")
+        logger.info("Writing email to disk...")
         text_file = open("temp/test.html", "w")
         text_file.write(htmlString)
         text_file.close()
@@ -93,7 +96,7 @@ def send_email(recipient=None, subject=None, htmlBody=None):
         msg.attach(MIMEText(htmlBody, 'html'))
 
         try:
-            print("Sending email to " + recipient + "...")
+            logger.info("Sending email to " + recipient + "...")
             server = smtplib.SMTP('smtp.gmail.com', 587)
             server.starttls()
             server.login(GMAIL_USER, GMAIL_PASS)
@@ -102,7 +105,7 @@ def send_email(recipient=None, subject=None, htmlBody=None):
             result = True
 
         except:
-            print("Email failed to send")
+            logger.exception("Email failed to send")
 
     return result
 

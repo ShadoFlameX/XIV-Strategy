@@ -1,6 +1,9 @@
+import logging
 import os
 import sqlite3
 from datetime import date, datetime
+
+logger = logging.getLogger("xivstrategy.data_store")
 
 class DataStore:
     def __init__(self):
@@ -25,7 +28,7 @@ class DataStore:
         now = datetime.now()
         cursor.execute('''INSERT INTO emails (created_at, open_positions, closed_positions)
                           VALUES(?,?,?)''', (now, openPositions, closedPositions))
-        print('Email inserted with date: %s, buys: %s, sells: %s' % (now, openPositions, closedPositions))
+        logger.info('Email inserted with date: %s, buys: %s, sells: %s' % (now, openPositions, closedPositions))
 
         self.db.commit()
 
