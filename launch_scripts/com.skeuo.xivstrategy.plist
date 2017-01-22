@@ -17,6 +17,8 @@
 	<string>/Users/Shared/xivstrategy/com.skeuo.xivstrategy.log</string>
 	<key>StandardErrorPath</key>
 	<string>/Users/Shared/xivstrategy/com.skeuo.xivstrategy_err.log</string>
+	<key>RunAtLoad</key>
+	<true/>
 </dict>
 </plist>
 
